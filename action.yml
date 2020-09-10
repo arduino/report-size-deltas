@@ -1,4 +1,4 @@
-name: 'Arduino Libraries - Report Size Deltas'
+name: 'Report Arduino Sketch Size Deltas'
 description: 'Comments on the pull request with a report on the change in memory usage of an example sketch'
 inputs:
   size-deltas-reports-artifact-name:
