@@ -22,5 +22,5 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: arduino/report-size-deltas@master
+      - uses: arduino/report-size-deltas@main
 ```
