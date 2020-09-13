@@ -1,7 +1,7 @@
 name: 'Report Arduino Sketch Size Deltas'
 description: 'Comments on the pull request with a report on the resulting change in memory usage of Arduino sketches'
 inputs:
-  sketches-reports-source-name:
+  sketches-reports-source:
     description: 'When run from scheduled workflow, name of the workflow artifact that contains sketches reports. When run from a pull request triggered workflow, path to the folder containing sketches reports.'
     default: 'size-deltas-reports'
   github-token:

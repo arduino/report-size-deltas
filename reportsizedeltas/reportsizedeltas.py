@@ -22,11 +22,11 @@ def main():
 
     if "INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME" in os.environ:
         print("::warning::The size-deltas-report-artifact-name input is deprecated. Use the equivalent input: "
-              "sketches-reports-source-name instead.")
-        os.environ["INPUT_SKETCHES-REPORTS-SOURCE-NAME"] = os.environ["INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME"]
+              "sketches-reports-source instead.")
+        os.environ["INPUT_SKETCHES-REPORTS-SOURCE"] = os.environ["INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME"]
 
     report_size_deltas = ReportSizeDeltas(repository_name=os.environ["GITHUB_REPOSITORY"],
-                                          sketches_reports_source_name=os.environ["INPUT_SKETCHES-REPORTS-SOURCE-NAME"],
+                                          sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
                                           token=os.environ["INPUT_GITHUB-TOKEN"])
 
     report_size_deltas.report_size_deltas()
@@ -79,9 +79,9 @@ class ReportSizeDeltas:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name, sketches_reports_source_name, token):
+    def __init__(self, repository_name, sketches_reports_source, token):
         self.repository_name = repository_name
-        self.sketches_reports_source_name = sketches_reports_source_name
+        self.sketches_reports_source = sketches_reports_source
         self.token = token
 
     def report_size_deltas(self):
@@ -96,7 +96,7 @@ class ReportSizeDeltas:
 
     def report_size_deltas_from_local_reports(self):
         """Comment a report of memory usage change to the pull request."""
-        sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source_name)
+        sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source)
         sketches_reports = self.get_sketches_reports(artifact_folder_object=sketches_reports_folder)
 
         if sketches_reports:
@@ -239,7 +239,7 @@ class ReportSizeDeltas:
 
             for artifact_data in artifacts_data["artifacts"]:
                 # The artifact is identified by a specific name
-                if artifact_data["name"] == self.sketches_reports_source_name:
+                if artifact_data["name"] == self.sketches_reports_source:
                     return artifact_data["archive_download_url"]
 
             page_number += 1
@@ -258,13 +258,13 @@ class ReportSizeDeltas:
         artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
         try:
             # Download artifact
-            with open(file=artifact_folder_object.name + "/" + self.sketches_reports_source_name + ".zip",
+            with open(file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip",
                       mode="wb") as out_file:
                 with self.raw_http_request(url=artifact_download_url) as fp:
                     out_file.write(fp.read())
 
             # Unzip artifact
-            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source_name + ".zip"
+            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip"
             with zipfile.ZipFile(file=artifact_zip_file, mode="r") as zip_ref:
                 zip_ref.extractall(path=artifact_folder_object.name)
             os.remove(artifact_zip_file)

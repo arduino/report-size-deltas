@@ -8,7 +8,7 @@ This action comments on the pull request with a report on the resulting change i
 
 ## Inputs
 
-### `sketches-reports-source-name`
+### `sketches-reports-source`
 
 **Default**: "size-deltas-reports"
 
@@ -20,7 +20,7 @@ Recommended for public repositories.
 
 The use of a scheduled workflow is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
 
-In this usage, the `sketches-reports-source-name` defines the name of the workflow artifact that contains the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
+In this usage, the `sketches-reports-source` defines the name of the workflow artifact that contains the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
 
 #### Run from the same workflow as the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action
 
@@ -32,7 +32,7 @@ In order to get reports for pull requests from forks, the ["Send write tokens to
 
 If the "Send write tokens to workflows from fork pull requests" setting is not enabled but the ["Run workflows from fork pull requests" setting](https://docs.github.com/en/github/administering-a-repository/disabling-or-limiting-github-actions-for-a-repository#enabling-workflows-for-private-repository-forks) is enabled, the workflow should be configured to only run the action when the pull request is not from a fork (`if: github.event.pull_request.head.repo.full_name == github.repository`). This will prevent workflow job failures that would otherwise be caused when the report creation failed due to not having the necessary write permissions.
 
-In this usage, the `sketches-reports-source-name` defines the path to the folder containing the memory usage data, as specified to the [`actions/download-artifact`](https://github.com/actions/download-artifact) action via its `path` input.
+In this usage, the `sketches-reports-source` defines the path to the folder containing the memory usage data, as specified to the [`actions/download-artifact`](https://github.com/actions/download-artifact) action via its `path` input.
 
 ### `github-token`
 
@@ -110,7 +110,7 @@ jobs:
     if: github.event_name == 'pull_request' # Only run the job when the workflow is triggered by a pull request
     runs-on: ubuntu-latest
     steps:
-      # This step is needed to get the size data produced by the compile job
+      # This step is needed to get the size data produced by the compile jobs
       - name: Download sketches reports artifact
         uses: actions/download-artifact@v2
         with:
@@ -119,5 +119,5 @@ jobs:
 
       - uses: arduino/report-size-deltas@main
         with:
-          sketches-reports-source-name: ${{ env.SKETCHES_REPORTS_PATH }}
+          sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
 ```
