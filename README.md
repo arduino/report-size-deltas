@@ -8,7 +8,7 @@ This action comments on the pull request with a report on the resulting change i
 
 ## Inputs
 
-### `size-deltas-reports-artifact-name`
+### `sketches-reports-source-name`
 
 Name of the [workflow artifact](https://docs.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts) that contains the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
 
