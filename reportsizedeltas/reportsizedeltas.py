@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import pathlib
 import re
 import sys
 import tempfile
@@ -84,59 +85,76 @@ class ReportSizeDeltas:
         self.token = token
 
     def report_size_deltas(self):
-        """Scan the repository's pull requests and comment memory usage change reports where appropriate."""
-        # Get the repository's pull requests
-        logger.debug("Getting PRs for " + self.repository_name)
-        page_number = 1
-        page_count = 1
-        while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/pulls",
-                                        page_number=page_number)
-            prs_data = api_data["json_data"]
-            for pr_data in prs_data:
-                # Note: closed PRs are not listed in the API response
-                pr_number = pr_data["number"]
-                pr_head_sha = pr_data["head"]["sha"]
-                print("::debug::Processing pull request number:", pr_number)
-                # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN will
-                # likely be used, which is owned by the github-actions bot, who doesn't have collaborator status. So
-                # locking the thread would cause the job to fail.
-                if pr_data["locked"]:
-                    print("::debug::PR locked, skipping")
-                    continue
+        """Comment a report of memory usage change to pull request(s)."""
+        if os.environ["GITHUB_EVENT_NAME"] == "pull_request":
+            # The sketches reports will be in a local folder location specified by the user
+            sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source_name)
+            sketches_reports = self.get_sketches_reports(artifact_folder_object=sketches_reports_folder)
 
-                if self.report_exists(pr_number=pr_number,
-                                      pr_head_sha=pr_head_sha):
-                    # Go on to the next PR
-                    print("::debug::Report already exists")
-                    continue
+            if sketches_reports:
+                report = self.generate_report(sketches_reports=sketches_reports)
 
-                artifact_download_url = self.get_artifact_download_url_for_sha(pr_user_login=pr_data["user"]["login"],
-                                                                               pr_head_ref=pr_data["head"]["ref"],
-                                                                               pr_head_sha=pr_head_sha)
-                if artifact_download_url is None:
-                    # Go on to the next PR
-                    print("::debug::No sketches report artifact found")
-                    continue
+                with open(file=os.environ["GITHUB_EVENT_PATH"]) as github_event_file:
+                    pr_number = json.load(github_event_file)["pull_request"]["number"]
 
-                artifact_folder_object = self.get_artifact(artifact_download_url=artifact_download_url)
+                self.comment_report(pr_number=pr_number, report_markdown=report)
 
-                sketches_reports = self.get_sketches_reports(artifact_folder_object=artifact_folder_object)
-
-                if sketches_reports:
-                    if sketches_reports[0][self.ReportKeys.commit_hash] != pr_head_sha:
-                        # The deltas report key uses the hash from the report, but the report_exists() comparison is
-                        # done using the hash provided by the API. If for some reason the two didn't match, it would
-                        # result in the deltas report being done over and over again.
-                        print("::warning::Report commit hash doesn't match PR's head commit hash, skipping")
+        else:
+            # The script is being run from a workflow triggered by something other than a PR
+            # Scan the repository's pull requests and comment memory usage change reports where appropriate.
+            # Get the repository's pull requests
+            logger.debug("Getting PRs for " + self.repository_name)
+            page_number = 1
+            page_count = 1
+            while page_number <= page_count:
+                api_data = self.api_request(request="repos/" + self.repository_name + "/pulls",
+                                            page_number=page_number)
+                prs_data = api_data["json_data"]
+                for pr_data in prs_data:
+                    # Note: closed PRs are not listed in the API response
+                    pr_number = pr_data["number"]
+                    pr_head_sha = pr_data["head"]["sha"]
+                    print("::debug::Processing pull request number:", pr_number)
+                    # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN will
+                    # likely be used, which is owned by the github-actions bot, who doesn't have collaborator status. So
+                    # locking the thread would cause the job to fail.
+                    if pr_data["locked"]:
+                        print("::debug::PR locked, skipping")
                         continue
 
-                    report = self.generate_report(sketches_reports=sketches_reports)
+                    if self.report_exists(pr_number=pr_number,
+                                          pr_head_sha=pr_head_sha):
+                        # Go on to the next PR
+                        print("::debug::Report already exists")
+                        continue
 
-                    self.comment_report(pr_number=pr_number, report_markdown=report)
+                    artifact_download_url = self.get_artifact_download_url_for_sha(
+                        pr_user_login=pr_data["user"]["login"],
+                        pr_head_ref=pr_data["head"]["ref"],
+                        pr_head_sha=pr_head_sha)
+                    if artifact_download_url is None:
+                        # Go on to the next PR
+                        print("::debug::No sketches report artifact found")
+                        continue
 
-            page_number += 1
-            page_count = api_data["page_count"]
+                    artifact_folder_object = self.get_artifact(artifact_download_url=artifact_download_url)
+
+                    sketches_reports = self.get_sketches_reports(artifact_folder_object=artifact_folder_object)
+
+                    if sketches_reports:
+                        if sketches_reports[0][self.ReportKeys.commit_hash] != pr_head_sha:
+                            # The deltas report key uses the hash from the report, but the report_exists() comparison is
+                            # done using the hash provided by the API. If for some reason the two didn't match, it would
+                            # result in the deltas report being done over and over again.
+                            print("::warning::Report commit hash doesn't match PR's head commit hash, skipping")
+                            continue
+
+                        report = self.generate_report(sketches_reports=sketches_reports)
+
+                        self.comment_report(pr_number=pr_number, report_markdown=report)
+
+                page_number += 1
+                page_count = api_data["page_count"]
 
     def report_exists(self, pr_number, pr_head_sha):
         """Return whether a report has already been commented to the pull request thread for the latest workflow run
@@ -257,10 +275,12 @@ class ReportSizeDeltas:
         artifact_folder_object -- object containing the data about the temporary folder that stores the markdown files
         """
         with artifact_folder_object as artifact_folder:
+            # artifact_folder will be a string when running in non-local report mode
+            artifact_folder = pathlib.Path(artifact_folder)
             sketches_reports = []
-            for report_filename in sorted(os.listdir(path=artifact_folder)):
+            for report_filename in sorted(artifact_folder.iterdir()):
                 # Combine sketches reports into an array
-                with open(file=artifact_folder + "/" + report_filename) as report_file:
+                with open(file=report_filename.joinpath(report_filename)) as report_file:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)

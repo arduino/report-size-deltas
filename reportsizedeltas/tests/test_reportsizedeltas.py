@@ -177,7 +177,42 @@ def test_set_verbosity():
     reportsizedeltas.set_verbosity(enable_verbosity=False)
 
 
-def test_report_size_deltas(mocker):
+def test_report_size_deltas_pull_request(mocker, monkeypatch):
+    sketches_reports_source_name = "golden-sketches-reports-source-path"
+    github_workspace = "golden-github-workspace"
+    sketches_reports_folder = pathlib.Path(github_workspace, sketches_reports_source_name)
+    sketches_reports = unittest.mock.sentinel.sketches_reports
+    report = "golden report"
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    monkeypatch.setenv("GITHUB_WORKSPACE", github_workspace)
+    monkeypatch.setenv("GITHUB_EVENT_PATH",
+                       str(test_data_path.joinpath("test_report_size_deltas_pull_request", "githubevent.json")))
+
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.get_sketches_reports", autospec=True)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.generate_report", autospec=True, return_value=report)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.comment_report", autospec=True)
+
+    report_size_deltas = get_reportsizedeltas_object(sketches_reports_source_name=sketches_reports_source_name)
+
+    # Test handling of no sketches reports data available
+    reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = None
+    report_size_deltas.report_size_deltas()
+
+    report_size_deltas.comment_report.assert_not_called()
+
+    # Test report data available
+    mocker.resetall()
+    reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = sketches_reports
+    report_size_deltas.report_size_deltas()
+
+    report_size_deltas.get_sketches_reports.assert_called_once_with(report_size_deltas,
+                                                                    artifact_folder_object=sketches_reports_folder)
+    report_size_deltas.generate_report.assert_called_once_with(report_size_deltas, sketches_reports=sketches_reports)
+    report_size_deltas.comment_report.assert_called_once_with(report_size_deltas, pr_number=42, report_markdown=report)
+
+
+def test_report_size_deltas_not_pull_request(mocker, monkeypatch):
     artifact_download_url = "test_artifact_download_url"
     artifact_folder_object = "test_artifact_folder_object"
     pr_head_sha = "pr-head-sha"
@@ -185,6 +220,8 @@ def test_report_size_deltas(mocker):
     report = "foo report"
     json_data = [{"number": 1, "locked": True, "head": {"sha": pr_head_sha, "ref": "asdf"}, "user": {"login": "1234"}},
                  {"number": 2, "locked": False, "head": {"sha": pr_head_sha, "ref": "asdf"}, "user": {"login": "1234"}}]
+
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "schedule")
 
     report_size_deltas = get_reportsizedeltas_object()
 
