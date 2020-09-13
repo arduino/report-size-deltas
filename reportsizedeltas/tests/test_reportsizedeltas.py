@@ -832,8 +832,9 @@ def test_handle_rate_limiting():
     report_size_deltas.handle_rate_limiting()
 
 
-@pytest.mark.slow(reason="Causes a delay")
-def test_determine_urlopen_retry_true():
+def test_determine_urlopen_retry_true(mocker):
+    mocker.patch("time.sleep", autospec=True)
+
     assert reportsizedeltas.determine_urlopen_retry(
         exception=urllib.error.HTTPError(None, 502, "Bad Gateway", None, None))
 
