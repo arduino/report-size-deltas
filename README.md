@@ -32,3 +32,20 @@ jobs:
     steps:
       - uses: arduino/report-size-deltas@main
 ```
+
+This must be used in conjunction with a workflow that runs the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action and uploads the resulting sketches report to a [workflow artifact](https://help.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts):
+```yaml
+on: [push, pull_request]
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: arduino/compile-sketches@main
+        with:
+          enable-deltas-report: true
+      - uses: actions/upload-artifact@v2
+        with:
+          name: size-deltas-reports
+          path: size-deltas-reports
+```
