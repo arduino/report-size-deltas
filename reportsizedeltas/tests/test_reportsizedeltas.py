@@ -1,6 +1,7 @@
 import distutils.dir_util
 import filecmp
 import json
+import os
 import pathlib
 import tempfile
 import unittest.mock
@@ -18,16 +19,17 @@ report_keys = reportsizedeltas.ReportSizeDeltas.ReportKeys()
 
 
 def get_reportsizedeltas_object(repository_name="FooOwner/BarRepository",
-                                artifact_name="foo-artifact-name",
+                                sketches_reports_source="foo-artifact-name",
                                 token="foo token"):
     """Return a reportsizedeltas.ReportSizeDeltas object to use in tests.
 
     Keyword arguments:
     repository_name -- repository owner and name e.g., octocat/Hello-World
-    artifact_name -- name of the workflow artifact that contains the memory usage data
+    sketches_reports_source -- name of the workflow artifact that contains the memory usage data
     token -- GitHub access token
     """
-    return reportsizedeltas.ReportSizeDeltas(repository_name=repository_name, artifact_name=artifact_name, token=token)
+    return reportsizedeltas.ReportSizeDeltas(repository_name=repository_name,
+                                             sketches_reports_source=sketches_reports_source, token=token)
 
 
 def directories_are_same(left_directory, right_directory):
@@ -89,20 +91,31 @@ def test_directories_are_same(tmp_path):
     assert directories_are_same(left_directory=left_directory, right_directory=right_directory) is True
 
 
-def test_main(monkeypatch, mocker):
-    repository_name = "FooOwner/BarRepository"
-    artifact_name = "foo-artifact-name"
-    token = "foo GitHub token"
-    monkeypatch.setenv("GITHUB_REPOSITORY", repository_name)
-    monkeypatch.setenv("INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME", artifact_name)
-    monkeypatch.setenv("INPUT_GITHUB-TOKEN", token)
+@pytest.fixture
+def setup_environment_variables(monkeypatch):
+    """Test fixture that sets up the environment variables required by reportsizedeltas.main() and returns an object
+    containing the values"""
 
+    class ActionInputs:
+        """A container for the values of the environment variables"""
+        repository_name = "GoldenOwner/GoldenRepository"
+        sketches_reports_source = "golden-source-name"
+        token = "golden-github-token"
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", ActionInputs.repository_name)
+    monkeypatch.setenv("INPUT_SKETCHES-REPORTS-SOURCE", ActionInputs.sketches_reports_source)
+    monkeypatch.setenv("INPUT_GITHUB-TOKEN", ActionInputs.token)
+
+    return ActionInputs()
+
+
+def test_main(monkeypatch, mocker, setup_environment_variables):
     class ReportSizeDeltas:
         """Stub"""
 
         def report_size_deltas(self):
             """Stub"""
-            pass    # pragma: no cover
+            pass  # pragma: no cover
 
     mocker.patch("reportsizedeltas.set_verbosity", autospec=True)
     mocker.patch("reportsizedeltas.ReportSizeDeltas", autospec=True, return_value=ReportSizeDeltas())
@@ -110,10 +123,51 @@ def test_main(monkeypatch, mocker):
     reportsizedeltas.main()
 
     reportsizedeltas.set_verbosity.assert_called_once_with(enable_verbosity=False)
-    reportsizedeltas.ReportSizeDeltas.assert_called_once_with(repository_name=repository_name,
-                                                              artifact_name=artifact_name,
-                                                              token=token)
+    reportsizedeltas.ReportSizeDeltas.assert_called_once_with(
+        repository_name=setup_environment_variables.repository_name,
+        sketches_reports_source=setup_environment_variables.sketches_reports_source,
+        token=setup_environment_variables.token
+    )
     ReportSizeDeltas.report_size_deltas.assert_called_once()
+
+
+@pytest.mark.parametrize("use_size_deltas_report_artifact_name", [True, False])
+def test_main_size_deltas_report_artifact_name_deprecation_warning(capsys,
+                                                                   mocker,
+                                                                   monkeypatch, setup_environment_variables,
+                                                                   use_size_deltas_report_artifact_name):
+    size_deltas_report_artifact_name = "golden-size-deltas-report-artifact-name-value"
+
+    if use_size_deltas_report_artifact_name:
+        monkeypatch.setenv("INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME", size_deltas_report_artifact_name)
+        expected_sketches_reports_source = size_deltas_report_artifact_name
+    else:
+        expected_sketches_reports_source = setup_environment_variables.sketches_reports_source
+
+    class ReportSizeDeltas:
+        """Stub"""
+
+        def report_size_deltas(self):
+            """Stub"""
+            pass  # pragma: no cover
+
+    mocker.patch("reportsizedeltas.set_verbosity", autospec=True)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas", autospec=True, return_value=ReportSizeDeltas())
+    mocker.patch.object(ReportSizeDeltas, "report_size_deltas")
+
+    reportsizedeltas.main()
+
+    expected_output = ""
+    if use_size_deltas_report_artifact_name:
+        expected_output = (
+            expected_output
+            + "::warning::The size-deltas-report-artifact-name input is deprecated. Use the equivalent input: "
+              "sketches-reports-source instead."
+        )
+
+    assert capsys.readouterr().out.strip() == expected_output
+
+    assert os.environ["INPUT_SKETCHES-REPORTS-SOURCE"] == expected_sketches_reports_source
 
 
 def test_set_verbosity():
@@ -123,7 +177,63 @@ def test_set_verbosity():
     reportsizedeltas.set_verbosity(enable_verbosity=False)
 
 
-def test_report_size_deltas(mocker):
+# noinspection PyUnresolvedReferences
+def test_report_size_deltas(mocker, monkeypatch):
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.report_size_deltas_from_local_reports", autospec=True)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.report_size_deltas_from_workflow_artifacts", autospec=True)
+
+    report_size_deltas = get_reportsizedeltas_object()
+
+    # Test triggered by pull_request event
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "pull_request")
+    report_size_deltas.report_size_deltas()
+    # noinspection PyUnresolvedReferences
+    report_size_deltas.report_size_deltas_from_local_reports.assert_called_once()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts.assert_not_called()
+
+    # Test triggered by other than pull_request event
+    mocker.resetall()
+    monkeypatch.setenv("GITHUB_EVENT_NAME", "schedule")
+    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_local_reports.assert_not_called()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts.assert_called_once()
+
+
+def test_report_size_deltas_from_local_reports(mocker, monkeypatch):
+    sketches_reports_source = "golden-sketches-reports-source-path"
+    github_workspace = "golden-github-workspace"
+    sketches_reports_folder = pathlib.Path(github_workspace, sketches_reports_source)
+    sketches_reports = unittest.mock.sentinel.sketches_reports
+    report = "golden report"
+
+    monkeypatch.setenv("GITHUB_WORKSPACE", github_workspace)
+    monkeypatch.setenv("GITHUB_EVENT_PATH",
+                       str(test_data_path.joinpath("test_report_size_deltas_pull_request", "githubevent.json")))
+
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.get_sketches_reports", autospec=True)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.generate_report", autospec=True, return_value=report)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.comment_report", autospec=True)
+
+    report_size_deltas = get_reportsizedeltas_object(sketches_reports_source=sketches_reports_source)
+
+    # Test handling of no sketches reports data available
+    reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = None
+    report_size_deltas.report_size_deltas_from_local_reports()
+
+    report_size_deltas.comment_report.assert_not_called()
+
+    # Test report data available
+    mocker.resetall()
+    reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = sketches_reports
+    report_size_deltas.report_size_deltas_from_local_reports()
+
+    report_size_deltas.get_sketches_reports.assert_called_once_with(report_size_deltas,
+                                                                    artifact_folder_object=sketches_reports_folder)
+    report_size_deltas.generate_report.assert_called_once_with(report_size_deltas, sketches_reports=sketches_reports)
+    report_size_deltas.comment_report.assert_called_once_with(report_size_deltas, pr_number=42, report_markdown=report)
+
+
+def test_report_size_deltas_from_workflow_artifacts(mocker):
     artifact_download_url = "test_artifact_download_url"
     artifact_folder_object = "test_artifact_folder_object"
     pr_head_sha = "pr-head-sha"
@@ -151,7 +261,7 @@ def test_report_size_deltas(mocker):
     # Test handling of locked PR
     mocker.resetall()
 
-    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_size_deltas.comment_report.assert_called_once_with(report_size_deltas, pr_number=2, report_markdown=report)
 
@@ -161,7 +271,7 @@ def test_report_size_deltas(mocker):
     reportsizedeltas.ReportSizeDeltas.report_exists.return_value = True
     mocker.resetall()
 
-    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_size_deltas.comment_report.assert_not_called()
 
@@ -170,7 +280,7 @@ def test_report_size_deltas(mocker):
     reportsizedeltas.ReportSizeDeltas.get_artifact_download_url_for_sha.return_value = None
     mocker.resetall()
 
-    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_size_deltas.comment_report.assert_not_called()
 
@@ -179,7 +289,7 @@ def test_report_size_deltas(mocker):
     reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = None
     mocker.resetall()
 
-    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_size_deltas.comment_report.assert_not_called()
 
@@ -190,7 +300,7 @@ def test_report_size_deltas(mocker):
 
     mocker.resetall()
 
-    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_size_deltas.comment_report.assert_not_called()
 
@@ -199,7 +309,7 @@ def test_report_size_deltas(mocker):
     reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = sketches_reports
     mocker.resetall()
 
-    report_size_deltas.report_size_deltas()
+    report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_exists_calls = []
     get_artifact_download_url_for_sha_calls = []
@@ -303,14 +413,14 @@ def test_get_artifact_download_url_for_sha():
 
 def test_get_artifact_download_url_for_run():
     repository_name = "test_name/test_repo"
-    artifact_name = "test_artifact_name"
+    sketches_reports_source = "test_sketches_reports_source"
     archive_download_url = "archive_download_url"
     run_id = "1234"
 
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name,
-                                                     artifact_name=artifact_name)
+                                                     sketches_reports_source=sketches_reports_source)
 
-    json_data = {"artifacts": [{"name": artifact_name, "archive_download_url": archive_download_url},
+    json_data = {"artifacts": [{"name": sketches_reports_source, "archive_download_url": archive_download_url},
                                {"name": "bar123", "archive_download_url": "wrong_artifact_url"}]}
     report_size_deltas.api_request = unittest.mock.MagicMock(return_value={"json_data": json_data,
                                                                            "additional_pages": False,
@@ -621,7 +731,7 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
     try:
         distutils.dir_util.copy_tree(src=str(sketches_reports_path),
                                      dst=artifact_folder_object.name)
-    except Exception:   # pragma: no cover
+    except Exception:  # pragma: no cover
         artifact_folder_object.cleanup()
         raise
     sketches_reports = report_size_deltas.get_sketches_reports(artifact_folder_object=artifact_folder_object)
@@ -662,7 +772,7 @@ def test_generate_report():
     try:
         distutils.dir_util.copy_tree(src=str(sketches_report_path),
                                      dst=artifact_folder_object.name)
-    except Exception:   # pragma: no cover
+    except Exception:  # pragma: no cover
         artifact_folder_object.cleanup()
         raise
     sketches_reports = report_size_deltas.get_sketches_reports(artifact_folder_object=artifact_folder_object)
@@ -832,8 +942,9 @@ def test_handle_rate_limiting():
     report_size_deltas.handle_rate_limiting()
 
 
-@pytest.mark.slow(reason="Causes a delay")
-def test_determine_urlopen_retry_true():
+def test_determine_urlopen_retry_true(mocker):
+    mocker.patch("time.sleep", autospec=True)
+
     assert reportsizedeltas.determine_urlopen_retry(
         exception=urllib.error.HTTPError(None, 502, "Bad Gateway", None, None))
 

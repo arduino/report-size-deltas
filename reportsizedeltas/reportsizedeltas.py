@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import pathlib
 import re
 import sys
 import tempfile
@@ -19,8 +20,13 @@ logger = logging.getLogger(__name__)
 def main():
     set_verbosity(enable_verbosity=False)
 
+    if "INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME" in os.environ:
+        print("::warning::The size-deltas-report-artifact-name input is deprecated. Use the equivalent input: "
+              "sketches-reports-source instead.")
+        os.environ["INPUT_SKETCHES-REPORTS-SOURCE"] = os.environ["INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME"]
+
     report_size_deltas = ReportSizeDeltas(repository_name=os.environ["GITHUB_REPOSITORY"],
-                                          artifact_name=os.environ["INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME"],
+                                          sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
                                           token=os.environ["INPUT_GITHUB-TOKEN"])
 
     report_size_deltas.report_size_deltas()
@@ -73,12 +79,35 @@ class ReportSizeDeltas:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name, artifact_name, token):
+    def __init__(self, repository_name, sketches_reports_source, token):
         self.repository_name = repository_name
-        self.artifact_name = artifact_name
+        self.sketches_reports_source = sketches_reports_source
         self.token = token
 
     def report_size_deltas(self):
+        """Comment a report of memory usage change to pull request(s)."""
+        if os.environ["GITHUB_EVENT_NAME"] == "pull_request":
+            # The sketches reports will be in a local folder location specified by the user
+            self.report_size_deltas_from_local_reports()
+        else:
+            # The script is being run from a workflow triggered by something other than a PR
+            # Scan the repository's pull requests and comment memory usage change reports where appropriate.
+            self.report_size_deltas_from_workflow_artifacts()
+
+    def report_size_deltas_from_local_reports(self):
+        """Comment a report of memory usage change to the pull request."""
+        sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source)
+        sketches_reports = self.get_sketches_reports(artifact_folder_object=sketches_reports_folder)
+
+        if sketches_reports:
+            report = self.generate_report(sketches_reports=sketches_reports)
+
+            with open(file=os.environ["GITHUB_EVENT_PATH"]) as github_event_file:
+                pr_number = json.load(github_event_file)["pull_request"]["number"]
+
+            self.comment_report(pr_number=pr_number, report_markdown=report)
+
+    def report_size_deltas_from_workflow_artifacts(self):
         """Scan the repository's pull requests and comment memory usage change reports where appropriate."""
         # Get the repository's pull requests
         logger.debug("Getting PRs for " + self.repository_name)
@@ -106,9 +135,10 @@ class ReportSizeDeltas:
                     print("::debug::Report already exists")
                     continue
 
-                artifact_download_url = self.get_artifact_download_url_for_sha(pr_user_login=pr_data["user"]["login"],
-                                                                               pr_head_ref=pr_data["head"]["ref"],
-                                                                               pr_head_sha=pr_head_sha)
+                artifact_download_url = self.get_artifact_download_url_for_sha(
+                    pr_user_login=pr_data["user"]["login"],
+                    pr_head_ref=pr_data["head"]["ref"],
+                    pr_head_sha=pr_head_sha)
                 if artifact_download_url is None:
                     # Go on to the next PR
                     print("::debug::No sketches report artifact found")
@@ -209,7 +239,7 @@ class ReportSizeDeltas:
 
             for artifact_data in artifacts_data["artifacts"]:
                 # The artifact is identified by a specific name
-                if artifact_data["name"] == self.artifact_name:
+                if artifact_data["name"] == self.sketches_reports_source:
                     return artifact_data["archive_download_url"]
 
             page_number += 1
@@ -228,12 +258,13 @@ class ReportSizeDeltas:
         artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
         try:
             # Download artifact
-            with open(file=artifact_folder_object.name + "/" + self.artifact_name + ".zip", mode="wb") as out_file:
+            with open(file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip",
+                      mode="wb") as out_file:
                 with self.raw_http_request(url=artifact_download_url) as fp:
                     out_file.write(fp.read())
 
             # Unzip artifact
-            artifact_zip_file = artifact_folder_object.name + "/" + self.artifact_name + ".zip"
+            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip"
             with zipfile.ZipFile(file=artifact_zip_file, mode="r") as zip_ref:
                 zip_ref.extractall(path=artifact_folder_object.name)
             os.remove(artifact_zip_file)
@@ -251,10 +282,12 @@ class ReportSizeDeltas:
         artifact_folder_object -- object containing the data about the temporary folder that stores the markdown files
         """
         with artifact_folder_object as artifact_folder:
+            # artifact_folder will be a string when running in non-local report mode
+            artifact_folder = pathlib.Path(artifact_folder)
             sketches_reports = []
-            for report_filename in sorted(os.listdir(path=artifact_folder)):
+            for report_filename in sorted(artifact_folder.iterdir()):
                 # Combine sketches reports into an array
-                with open(file=artifact_folder + "/" + report_filename) as report_file:
+                with open(file=report_filename.joinpath(report_filename)) as report_file:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)
