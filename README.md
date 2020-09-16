@@ -6,6 +6,21 @@
 
 This action comments on the pull request with a report on the resulting change in memory usage of the [Arduino](https://www.arduino.cc/) sketches compiled by the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action. This should be run from a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule).
 
+## Table of contents
+
+<!-- toc -->
+
+- [Inputs](#inputs)
+  - [`sketches-reports-source`](#sketches-reports-source)
+    - [Run from a scheduled workflow](#run-from-a-scheduled-workflow)
+    - [Run from the same workflow as the `arduino/compile-sketches` action](#run-from-the-same-workflow-as-the-arduinocompile-sketches-action)
+  - [`github-token`](#github-token)
+- [Example usage](#example-usage)
+  - [Scheduled workflow](#scheduled-workflow)
+  - [Workflow triggered by `pull_request` event](#workflow-triggered-by-pull_request-event)
+
+<!-- tocstop -->
+
 ## Inputs
 
 ### `sketches-reports-source`
