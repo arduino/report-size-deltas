@@ -10,7 +10,7 @@ This action comments on the pull request with a report on the resulting change i
 
 ### `sketches-reports-source`
 
-**Default**: "size-deltas-reports"
+**Default**: "sketches-reports"
 
 The action can be used in two ways:
 
@@ -68,8 +68,8 @@ jobs:
           enable-deltas-report: true
       - uses: actions/upload-artifact@v2
         with:
-          name: size-deltas-reports
-          path: size-deltas-reports
+          name: sketches-reports
+          path: sketches-reports
 ```
 
 ### Workflow triggered by `pull_request` event
