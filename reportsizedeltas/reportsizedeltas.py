@@ -239,7 +239,7 @@ class ReportSizeDeltas:
 
             for artifact_data in artifacts_data["artifacts"]:
                 # The artifact is identified by a specific name
-                if artifact_data["name"] == self.sketches_reports_source:
+                if not artifact_data["expired"] and artifact_data["name"] == self.sketches_reports_source:
                     return artifact_data["archive_download_url"]
 
             page_number += 1

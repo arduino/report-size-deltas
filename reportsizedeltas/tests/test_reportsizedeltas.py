@@ -411,7 +411,9 @@ def test_get_artifact_download_url_for_sha():
     report_size_deltas.get_artifact_download_url_for_run.assert_called_once_with(run_id=run_id)
 
 
-def test_get_artifact_download_url_for_run():
+@pytest.mark.parametrize("expired", [True, False])
+@pytest.mark.parametrize("artifact_name", ["test_sketches_reports_source", "incorrect-artifact-name"])
+def test_get_artifact_download_url_for_run(expired, artifact_name):
     repository_name = "test_name/test_repo"
     sketches_reports_source = "test_sketches_reports_source"
     archive_download_url = "archive_download_url"
@@ -420,28 +422,34 @@ def test_get_artifact_download_url_for_run():
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name,
                                                      sketches_reports_source=sketches_reports_source)
 
-    json_data = {"artifacts": [{"name": sketches_reports_source, "archive_download_url": archive_download_url},
-                               {"name": "bar123", "archive_download_url": "wrong_artifact_url"}]}
+    json_data = {
+        "artifacts": [
+            {
+                "name": artifact_name,
+                "archive_download_url": archive_download_url,
+                "expired": expired
+            },
+            {
+                "name": "bar123",
+                "archive_download_url": "wrong_artifact_url",
+                "expired": False
+            }
+        ]
+    }
     report_size_deltas.api_request = unittest.mock.MagicMock(return_value={"json_data": json_data,
                                                                            "additional_pages": False,
                                                                            "page_count": 1})
 
-    # Artifact name match
-    assert archive_download_url == report_size_deltas.get_artifact_download_url_for_run(run_id=run_id)
+    download_url = report_size_deltas.get_artifact_download_url_for_run(run_id=run_id)
+    if not expired and artifact_name == sketches_reports_source:
+        assert download_url == archive_download_url
+    else:
+        assert download_url is None
 
     report_size_deltas.api_request.assert_called_once_with(
         request="repos/" + repository_name + "/actions/runs/" + str(run_id)
                 + "/artifacts",
         page_number=1)
-
-    json_data = {"artifacts": [{"name": "foo123", "archive_download_url": "test_artifact_url"},
-                               {"name": "bar123", "archive_download_url": "wrong_artifact_url"}]}
-    report_size_deltas.api_request = unittest.mock.MagicMock(return_value={"json_data": json_data,
-                                                                           "additional_pages": False,
-                                                                           "page_count": 1})
-
-    # No artifact name match
-    assert report_size_deltas.get_artifact_download_url_for_run(run_id=run_id) is None
 
 
 @pytest.mark.parametrize("test_artifact_name, expected_success",
