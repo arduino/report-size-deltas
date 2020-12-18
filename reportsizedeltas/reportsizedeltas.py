@@ -316,6 +316,11 @@ class ReportSizeDeltas:
         Keyword arguments:
         sketches_reports -- list of sketches_reports containing the data to generate the deltas report from
         """
+        # From https://github.community/t/maximum-length-for-the-comment-body-in-issues-and-pr/148867/2
+        # > PR body/Issue comments are still stored in MySQL as a mediumblob with a maximum value length of 262,144.
+        # > This equals a limit of 65,536 4-byte unicode characters.
+        maximum_report_length = 262144
+
         fqbn_column_heading = "Board"
 
         # Generate summary report data
@@ -395,21 +400,27 @@ class ReportSizeDeltas:
         report_markdown = report_markdown + generate_markdown_table(row_list=summary_report_data) + "\n"
 
         # Add full table
-        report_markdown = (report_markdown
-                           + "<details>\n"
-                             "<summary>Click for full report table</summary>\n\n")
-        report_markdown = (report_markdown
-                           + generate_markdown_table(row_list=full_report_data)
-                           + "\n</details>\n\n")
+        report_markdown_with_table = (report_markdown
+                                      + "<details>\n"
+                                        "<summary>Click for full report table</summary>\n\n")
+        report_markdown_with_table = (report_markdown_with_table
+                                      + generate_markdown_table(row_list=full_report_data)
+                                      + "\n</details>\n\n")
 
-        # Add full CSV
-        report_markdown = (report_markdown
-                           + "<details>\n"
-                             "<summary>Click for full report CSV</summary>\n\n"
-                             "```\n")
-        report_markdown = (report_markdown
-                           + generate_csv_table(row_list=full_report_data)
-                           + "```\n</details>")
+        if len(report_markdown_with_table) < maximum_report_length:
+            report_markdown = report_markdown_with_table
+
+            # Add full CSV
+            report_markdown_with_csv = (report_markdown
+                                        + "<details>\n"
+                                          "<summary>Click for full report CSV</summary>\n\n"
+                                          "```\n")
+            report_markdown_with_csv = (report_markdown_with_csv
+                                        + generate_csv_table(row_list=full_report_data)
+                                        + "```\n</details>")
+
+            if len(report_markdown_with_csv) < maximum_report_length:
+                report_markdown = report_markdown_with_csv
 
         logger.debug("Report:\n" + report_markdown)
         return report_markdown
