@@ -69,7 +69,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: arduino/report-size-deltas@main
+      - uses: arduino/report-size-deltas@v1
 ```
 
 This must be used in conjunction with a workflow that runs the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action and uploads the resulting sketches report to a [workflow artifact](https://help.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts):
@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: arduino/compile-sketches@main
+      - uses: arduino/compile-sketches@v1
         with:
           enable-deltas-report: true
       - uses: actions/upload-artifact@v2
@@ -108,7 +108,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - uses: arduino/compile-sketches@main
+      - uses: arduino/compile-sketches@v1
         with:
           fqbn: ${{ matrix.fqbn }}
           enable-deltas-report: true
@@ -134,7 +134,7 @@ jobs:
           name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
 
-      - uses: arduino/report-size-deltas@main
+      - uses: arduino/report-size-deltas@v1
         with:
           sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
 ```
