@@ -1,4 +1,4 @@
-FROM python:3.8.6
+FROM python:3.9.4
 
 # Copies your code file from your action repository to the filesystem path `/` of the container
 COPY reportsizedeltas /reportsizedeltas
