@@ -1,0 +1,39 @@
+name: Upload test sketches report artifact
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      # The "labeled" event can be used to easily retrigger the workflow to restore the workflow artifact after it
+      # expires every 90 days.
+      - labeled
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # The action only does a deltas report when the sketches report's `commit_hash` value matches the PR head SHA
+      - name: Update commit hash in reports
+        run: |
+          # Set up dedicated folder for the updated sketches reports (it's not possible to modify them in place)
+          SKETCHES_REPORTS_PATH="${{ runner.temp }}/sketches-reports"
+          # See: https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
+          echo "SKETCHES_REPORTS_PATH=$SKETCHES_REPORTS_PATH" >> "$GITHUB_ENV"
+          mkdir --parents "$SKETCHES_REPORTS_PATH"
+
+          cd "${{ github.workspace }}/.github/workflows/testdata/sketches-reports/"
+          for reportFile in *.json; do
+            jq '.commit_hash = "${{ github.event.pull_request.head.sha }}"' "$reportFile" > "${SKETCHES_REPORTS_PATH}/$reportFile"
+          done
+
+      - name: Save sketches report as workflow artifact
+        uses: actions/upload-artifact@v2
+        with:
+          if-no-files-found: error
+          path: ${{ env.SKETCHES_REPORTS_PATH }}
+          name: sketches-reports
