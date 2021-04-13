@@ -1,0 +1,54 @@
+name: Run integration tests
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/test-integration.yml'
+      - '.github/workflows/testdata/**'
+      - 'action.yml'
+      - 'Dockerfile'
+      - 'reportsizedeltas/**'
+  push:
+    paths:
+      - '.github/workflows/test-integration.yml'
+      - '.github/workflows/testdata/**'
+      - 'action.yml'
+      - 'Dockerfile'
+      - 'reportsizedeltas/**'
+  schedule:
+    # Run daily at 8 AM UTC to catch breakage caused by changes to external resources.
+    - cron: "0 8 * * *"
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  local-source:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run action
+        # Use arduino/report-size-deltas action from local path
+        uses: ./
+        # The action will always fail on PRs submitted from forks due to not having write permissions.
+        # Some verification can still be achieved by checking the log to see whether it failed in the expected manner:
+        # WARNING:__main__:Temporarily unable to open URL (HTTP Error 403: Forbidden), retrying
+        # ...
+        # TimeoutError: Maximum number of URL load retries exceeded
+        continue-on-error: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        with:
+          sketches-reports-source: .github/workflows/testdata/sketches-reports
+
+  artifact-source:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Run action
+        # Use arduino/report-size-deltas action from local path
+        uses: ./
