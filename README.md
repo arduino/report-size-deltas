@@ -1,6 +1,7 @@
 # `arduino/report-size-deltas` action
 
 [![Tests](https://github.com/arduino/report-size-deltas/workflows/libraries/report-size-deltas%20workflow/badge.svg)](https://github.com/arduino/report-size-deltas/actions?workflow=libraries/report-size-deltas+workflow)
+[![Integration Tests](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml)
 [![Spell Check](https://github.com/arduino/report-size-deltas/workflows/Spell%20Check/badge.svg)](https://github.com/arduino/report-size-deltas/actions?workflow=Spell+Check)
 [![codecov](https://codecov.io/gh/arduino/report-size-deltas/branch/master/graph/badge.svg)](https://codecov.io/gh/arduino/report-size-deltas)
 
