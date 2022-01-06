@@ -39,12 +39,13 @@ jobs:
           pip install --quiet pep8-naming
           flake8 --config "${{ env.PYTHON_PROJECT_PATH }}/.flake8" --show-source "${{ env.PYTHON_PROJECT_PATH }}"
 
-      - name: Run Python unit tests and report code coverage
+      - name: Run Python unit tests and record code coverage data
         run: |
           export PYTHONPATH="${{ env.PYTHON_PROJECT_PATH }}"
           coverage run --source="${{ env.PYTHON_PROJECT_PATH }}" --module pytest "${{ env.PYTHON_PROJECT_TESTS_PATH }}"
-          # Display code coverage report in workflow run log
-          coverage report
+
+      - name: Display code coverage report
+        run: coverage report
 
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v1
