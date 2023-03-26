@@ -6,6 +6,8 @@ updates:
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/dependabot/README.md
   # See: https://docs.github.com/en/code-security/supply-chain-security/keeping-your-actions-up-to-date-with-dependabot
   - package-ecosystem: github-actions
+    assignees:
+      - per1234
     directory: / # Check the repository's workflows under /.github/workflows/
     schedule:
       interval: daily
@@ -13,6 +15,8 @@ updates:
       - "topic: infrastructure"
 
   - package-ecosystem: pip
+    assignees:
+      - per1234
     directory: reportsizedeltas/tests
     schedule:
       interval: daily
