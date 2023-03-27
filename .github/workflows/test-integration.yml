@@ -33,12 +33,16 @@ jobs:
       - name: Run action
         # Use arduino/report-size-deltas action from local path
         uses: ./
-        # The action will always fail on PRs submitted from forks due to not having write permissions.
+        # The action will always fail on PRs submitted from forks or by Dependabot due to not having write permissions.
         # Some verification can still be achieved by checking the log to see whether it failed in the expected manner:
         # WARNING:__main__:Temporarily unable to open URL (HTTP Error 403: Forbidden), retrying
         # ...
         # TimeoutError: Maximum number of URL load retries exceeded
-        continue-on-error: ${{ github.event.pull_request.head.repo.full_name != github.repository }}
+        continue-on-error: >-
+          ${{
+            github.event.pull_request.head.repo.full_name != github.repository ||
+            github.triggering_actor == 'dependabot[bot]'
+          }}
         with:
           sketches-reports-source: .github/workflows/testdata/sketches-reports
 
@@ -50,5 +54,12 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Run action
+        # The action will always fail on pushes by Dependabot due to not having write permissions.
+        # Rather than skipping the job under these conditions, the failure is ignored because some verification can
+        # still be achieved by checking the log to see whether it failed in the expected manner:
+        # WARNING:__main__:Temporarily unable to open URL (HTTP Error 403: Forbidden), retrying
+        # ...
+        # TimeoutError: Maximum number of URL load retries exceeded
+        continue-on-error: ${{ github.triggering_actor == 'dependabot[bot]' }}
         # Use arduino/report-size-deltas action from local path
         uses: ./
