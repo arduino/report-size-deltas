@@ -291,6 +291,8 @@ class ReportSizeDeltas:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)
+                        or (self.ReportKeys.sizes
+                            not in report_data[self.ReportKeys.boards][0])
                         or (self.ReportKeys.maximum
                             not in report_data[self.ReportKeys.boards][0][self.ReportKeys.sizes][0])
                     ):
