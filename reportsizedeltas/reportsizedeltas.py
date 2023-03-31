@@ -60,6 +60,7 @@ class ReportSizeDeltas:
     token -- GitHub access token
     """
     report_key_beginning = "**Memory usage change @ "
+    not_applicable_indicator = "N/A"
 
     class ReportKeys:
         """Key names used in the sketches report dictionary"""
@@ -344,23 +345,47 @@ class ReportSizeDeltas:
                         column_heading=size_data[self.ReportKeys.name]
                     )
 
-                    # Add the absolute memory data to the cell
-                    summary_report_data[row_number][column_number] = (
-                        get_summary_value(
-                            show_emoji=True,
-                            minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][self.ReportKeys.minimum],
-                            maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][self.ReportKeys.maximum]
+                    # Add the memory data to the cell
+                    if self.ReportKeys.delta in size_data:
+                        # Absolute data
+                        summary_report_data[row_number][column_number] = (
+                            self.get_summary_value(
+                                show_emoji=True,
+                                minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
+                                    self.ReportKeys.minimum],
+                                maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
+                                    self.ReportKeys.maximum]
+                            )
                         )
-                    )
 
-                    # Add the relative memory data to the cell
-                    summary_report_data[row_number][column_number + 1] = (
-                        get_summary_value(
-                            show_emoji=False,
-                            minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][self.ReportKeys.minimum],
-                            maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][self.ReportKeys.maximum]
+                        # Relative data
+                        summary_report_data[row_number][column_number + 1] = (
+                            self.get_summary_value(
+                                show_emoji=False,
+                                minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
+                                    self.ReportKeys.minimum],
+                                maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
+                                    self.ReportKeys.maximum]
+                            )
                         )
-                    )
+                    else:
+                        # Absolute data
+                        summary_report_data[row_number][column_number] = (
+                            self.get_summary_value(
+                                show_emoji=True,
+                                minimum=self.not_applicable_indicator,
+                                maximum=self.not_applicable_indicator
+                            )
+                        )
+
+                        # Relative data
+                        summary_report_data[row_number][column_number + 1] = (
+                            self.get_summary_value(
+                                show_emoji=False,
+                                minimum=self.not_applicable_indicator,
+                                maximum=self.not_applicable_indicator
+                            )
+                        )
 
         # Generate detailed report data
         full_report_data = [[fqbn_column_heading]]
@@ -385,15 +410,23 @@ class ReportSizeDeltas:
                             )
                         )
 
-                        # Add the absolute memory data to the cell
-                        full_report_data[row_number][column_number] = (
-                            size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
-                        )
+                        # Add the memory data to the cell
+                        if self.ReportKeys.delta in size_data:
+                            # Absolute
+                            full_report_data[row_number][column_number] = (
+                                size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
+                            )
 
-                        # Add the relative memory data to the cell
-                        full_report_data[row_number][column_number + 1] = (
-                            size_data[self.ReportKeys.delta][self.ReportKeys.relative]
-                        )
+                            # Relative
+                            full_report_data[row_number][column_number + 1] = (
+                                size_data[self.ReportKeys.delta][self.ReportKeys.relative]
+                            )
+                        else:
+                            # Absolute
+                            full_report_data[row_number][column_number] = self.not_applicable_indicator
+
+                            # Relative
+                            full_report_data[row_number][column_number + 1] = self.not_applicable_indicator
 
         # Add comment heading
         report_markdown = self.report_key_beginning + sketches_reports[0][self.ReportKeys.commit_hash] + "**\n\n"
@@ -426,6 +459,45 @@ class ReportSizeDeltas:
 
         logger.debug("Report:\n" + report_markdown)
         return report_markdown
+
+    def get_summary_value(self, show_emoji, minimum, maximum):
+        """Return the Markdown formatted text for a memory change data cell in the report table.
+
+        Keyword arguments:
+        show_emoji -- whether to add the emoji change indicator
+        minimum -- minimum amount of change for this memory type
+        minimum -- maximum amount of change for this memory type
+        """
+        size_decrease_emoji = ":green_heart:"
+        size_ambiguous_emoji = ":grey_question:"
+        size_increase_emoji = ":small_red_triangle:"
+
+        value = None
+        if minimum == self.not_applicable_indicator:
+            value = self.not_applicable_indicator
+            emoji = None
+        elif minimum < 0 and maximum <= 0:
+            emoji = size_decrease_emoji
+        elif minimum == 0 and maximum == 0:
+            emoji = None
+        elif minimum >= 0 and maximum > 0:
+            emoji = size_increase_emoji
+        else:
+            emoji = size_ambiguous_emoji
+
+        if value is None:
+            # Prepend + to positive values to improve readability
+            if minimum > 0:
+                minimum = "+" + str(minimum)
+            if maximum > 0:
+                maximum = "+" + str(maximum)
+
+            value = str(minimum) + " - " + str(maximum)
+
+        if show_emoji and (emoji is not None):
+            value = emoji + " " + value
+
+        return value
 
     def comment_report(self, pr_number, report_markdown):
         """Submit the report as a comment on the PR thread
@@ -660,47 +732,6 @@ def get_report_column_number(report, column_heading):
         report[len(report) - 1].append("")
 
     return column_number
-
-
-def get_summary_value(show_emoji, minimum, maximum):
-    """Return the Markdown formatted text for a memory change data cell in the report table.
-
-    Keyword arguments:
-    show_emoji -- whether to add the emoji change indicator
-    minimum -- minimum amount of change for this memory type
-    minimum -- maximum amount of change for this memory type
-    """
-    size_decrease_emoji = ":green_heart:"
-    size_ambiguous_emoji = ":grey_question:"
-    size_increase_emoji = ":small_red_triangle:"
-    not_applicable_indicator = "N/A"
-
-    value = None
-    if minimum == not_applicable_indicator:
-        value = not_applicable_indicator
-        emoji = None
-    elif minimum < 0 and maximum <= 0:
-        emoji = size_decrease_emoji
-    elif minimum == 0 and maximum == 0:
-        emoji = None
-    elif minimum >= 0 and maximum > 0:
-        emoji = size_increase_emoji
-    else:
-        emoji = size_ambiguous_emoji
-
-    if value is None:
-        # Prepend + to positive values to improve readability
-        if minimum > 0:
-            minimum = "+" + str(minimum)
-        if maximum > 0:
-            maximum = "+" + str(maximum)
-
-        value = str(minimum) + " - " + str(maximum)
-
-    if show_emoji and (emoji is not None):
-        value = emoji + " " + value
-
-    return value
 
 
 def generate_markdown_table(row_list):

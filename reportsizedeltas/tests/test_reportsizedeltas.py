@@ -727,7 +727,72 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                             ]
                         }
                     ]
-                }
+                },
+                {
+                    report_keys.commit_hash: "54815a7d1a30fcb0d77d98242b158e7845c0516d",
+                    report_keys.commit_url: "https://example.com/foo",
+                    report_keys.boards: [
+                        {
+                            report_keys.board: "arduino:mbed_portenta:envie_m7",
+                            report_keys.sizes: [
+                                {
+                                    report_keys.name: "flash",
+                                    report_keys.maximum: "N/A",
+                                },
+                                {
+                                    report_keys.name: "RAM for global variables",
+                                    report_keys.maximum: "N/A",
+                                }
+                            ],
+                            report_keys.sketches: [
+                                {
+                                    report_keys.compilation_success: True,
+                                    report_keys.name: "examples/Bar",
+                                    report_keys.sizes: [
+                                        {
+                                            report_keys.current: {
+                                                report_keys.absolute: "N/A",
+                                                report_keys.relative: "N/A"
+                                            },
+                                            report_keys.name: "flash",
+                                            report_keys.maximum: "N/A",
+                                        },
+                                        {
+                                            report_keys.current: {
+                                                report_keys.absolute: "N/A",
+                                                report_keys.relative: "N/A"
+                                            },
+                                            report_keys.name: "RAM for global variables",
+                                            report_keys.maximum: "N/A",
+                                        }
+                                    ]
+                                },
+                                {
+                                    report_keys.compilation_success: True,
+                                    report_keys.name: "examples/Foo",
+                                    report_keys.sizes: [
+                                        {
+                                            report_keys.current: {
+                                                report_keys.absolute: "N/A",
+                                                report_keys.relative: "N/A"
+                                            },
+                                            report_keys.name: "flash",
+                                            report_keys.maximum: "N/A",
+                                        },
+                                        {
+                                            report_keys.current: {
+                                                report_keys.absolute: "N/A",
+                                                report_keys.relative: "N/A"
+                                            },
+                                            report_keys.name: "RAM for global variables",
+                                            report_keys.maximum: "N/A",
+                                        }
+                                    ]
+                                },
+                            ]
+                        }
+                    ]
+                },
             ]
         )
     ]
@@ -754,14 +819,16 @@ def test_generate_report():
         "Board|flash|%|RAM for global variables|%\n"
         "-|-|-|-|-\n"
         "arduino:avr:leonardo|:green_heart: -12 - -12|-0.05 - -0.05|0 - 0|0.0 - 0.0\n"
-        "arduino:avr:uno|:green_heart: -994 - -994|-3.08 - -3.08|:green_heart: -175 - -175|-8.54 - -8.54\n\n"
+        "arduino:avr:uno|:green_heart: -994 - -994|-3.08 - -3.08|:green_heart: -175 - -175|-8.54 - -8.54\n"
+        "arduino:mbed_portenta:envie_m7|N/A|N/A|N/A|N/A\n\n"
         "<details>\n"
         "<summary>Click for full report table</summary>\n\n"
         "Board|examples/Bar<br>flash|%|examples/Bar<br>RAM for global variables|%|examples/Foo<br>flash|%|examples/Foo"
         "<br>RAM for global variables|%\n"
         "-|-|-|-|-|-|-|-|-\n"
         "arduino:avr:leonardo|N/A|N/A|N/A|N/A|-12|-0.05|0|0.0\n"
-        "arduino:avr:uno|N/A|N/A|N/A|N/A|-994|-3.08|-175|-8.54\n\n"
+        "arduino:avr:uno|N/A|N/A|N/A|N/A|-994|-3.08|-175|-8.54\n"
+        "arduino:mbed_portenta:envie_m7|N/A|N/A|N/A|N/A|N/A|N/A|N/A|N/A\n\n"
         "</details>\n\n"
         "<details>\n"
         "<summary>Click for full report CSV</summary>\n\n"
@@ -770,6 +837,7 @@ def test_generate_report():
         "<br>RAM for global variables,%\n"
         "arduino:avr:leonardo,N/A,N/A,N/A,N/A,-12,-0.05,0,0.0\n"
         "arduino:avr:uno,N/A,N/A,N/A,N/A,-994,-3.08,-175,-8.54\n"
+        "arduino:mbed_portenta:envie_m7,N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A\n"
         "```\n"
         "</details>"
     )
@@ -787,6 +855,24 @@ def test_generate_report():
 
     report = report_size_deltas.generate_report(sketches_reports=sketches_reports)
     assert report == expected_deltas_report
+
+
+@pytest.mark.parametrize("show_emoji, minimum, maximum, expected_value",
+                         [(True, "N/A", "N/A", "N/A"),
+                          (True, -1, 0, ":green_heart: -1 - 0"),
+                          (False, -1, 0, "-1 - 0"),
+                          (True, 0, 0, "0 - 0"),
+                          (True, 0, 1, ":small_red_triangle: 0 - +1"),
+                          (True, 1, 1, ":small_red_triangle: +1 - +1"),
+                          (True, -1, 1, ":grey_question: -1 - +1")])
+def test_get_summary_value(show_emoji, minimum, maximum, expected_value):
+    report_size_deltas = get_reportsizedeltas_object()
+
+    assert report_size_deltas.get_summary_value(
+        show_emoji=show_emoji,
+        minimum=minimum,
+        maximum=maximum
+    ) == expected_value
 
 
 def test_comment_report():
@@ -986,18 +1072,6 @@ def test_get_report_column_number(report, column_heading, expected_column_number
         column_heading=column_heading
     ) == expected_column_number
     assert report == expected_report
-
-
-@pytest.mark.parametrize("show_emoji, minimum, maximum, expected_value",
-                         [(True, "N/A", "N/A", "N/A"),
-                          (True, -1, 0, ":green_heart: -1 - 0"),
-                          (False, -1, 0, "-1 - 0"),
-                          (True, 0, 0, "0 - 0"),
-                          (True, 0, 1, ":small_red_triangle: 0 - +1"),
-                          (True, 1, 1, ":small_red_triangle: +1 - +1"),
-                          (True, -1, 1, ":grey_question: -1 - +1")])
-def test_get_summary_value(show_emoji, minimum, maximum, expected_value):
-    assert reportsizedeltas.get_summary_value(show_emoji=show_emoji, minimum=minimum, maximum=maximum) == expected_value
 
 
 def test_generate_markdown_table():
