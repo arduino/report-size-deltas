@@ -812,6 +812,200 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
     assert sketches_reports == expected_sketches_reports
 
 
+@pytest.mark.parametrize(
+    "report_data, fqbn_data, expected_report_data",
+    [
+        (
+            [["Board"]],
+            {
+                report_keys.board: "arduino:avr:uno",
+                report_keys.sizes: [
+                    {
+                        report_keys.delta: {
+                            report_keys.absolute: {
+                                report_keys.maximum: -994,
+                                report_keys.minimum: -994
+                            },
+                            report_keys.relative: {
+                                report_keys.maximum: -3.08,
+                                report_keys.minimum: -3.08
+                            }
+                        },
+                        report_keys.name: "flash",
+                        report_keys.maximum: 32256,
+                    },
+                    {
+                        report_keys.delta: {
+                            report_keys.absolute: {
+                                report_keys.maximum: -175,
+                                report_keys.minimum: -175
+                            },
+                            report_keys.relative: {
+                                report_keys.maximum: -8.54,
+                                report_keys.minimum: -8.54
+                            }
+                        },
+                        report_keys.name: "RAM for global variables",
+                        report_keys.maximum: 2048,
+                    }
+                ]
+            },
+            [
+                ["Board", "flash", "%", "RAM for global variables", "%"],
+                [
+                    "arduino:avr:uno",
+                    ":green_heart: -994 - -994",
+                    "-3.08 - -3.08",
+                    ":green_heart: -175 - -175",
+                    "-8.54 - -8.54"
+                ]
+            ]
+        ),
+        (
+            [
+                ["Board", "flash", "%", "RAM for global variables", "%"],
+                [
+                    "arduino:avr:uno",
+                    ":green_heart: -994 - -994",
+                    "-3.08 - -3.08",
+                    ":green_heart: -175 - -175",
+                    "-8.54 - -8.54"
+                ]
+            ],
+            {
+                report_keys.board: "arduino:mbed_portenta:envie_m7",
+                report_keys.sizes: [
+                    {
+                        report_keys.name: "flash",
+                        report_keys.maximum: "N/A",
+                    },
+                    {
+                        report_keys.name: "RAM for global variables",
+                        report_keys.maximum: "N/A",
+                    }
+                ]
+            },
+            [
+                ["Board", "flash", "%", "RAM for global variables", "%"],
+                [
+                    "arduino:avr:uno",
+                    ":green_heart: -994 - -994",
+                    "-3.08 - -3.08",
+                    ":green_heart: -175 - -175",
+                    "-8.54 - -8.54"
+                ],
+                ["arduino:mbed_portenta:envie_m7", "N/A", "N/A", "N/A", "N/A"]
+            ]
+        )
+    ]
+)
+def test_add_summary_report_row(report_data, fqbn_data, expected_report_data):
+    report_size_deltas = get_reportsizedeltas_object()
+    report_size_deltas.add_summary_report_row(report_data, fqbn_data)
+
+    assert report_data == expected_report_data
+
+
+@pytest.mark.parametrize(
+    "report_data, fqbn_data, expected_report_data",
+    [
+        (
+            [["Board"]],
+            {
+                report_keys.board: "arduino:avr:leonardo",
+                report_keys.sketches: [
+                    {
+                        report_keys.compilation_success: True,
+                        report_keys.name: "examples/Foo",
+                        report_keys.sizes: [
+                            {
+                                report_keys.current: {
+                                    report_keys.absolute: 3462,
+                                    report_keys.relative: 12.07
+                                },
+                                report_keys.delta: {
+                                    report_keys.absolute: -12,
+                                    report_keys.relative: -0.05
+                                },
+                                report_keys.name: "flash",
+                                report_keys.maximum: 28672,
+                                report_keys.previous: {
+                                    report_keys.absolute: 3474,
+                                    report_keys.relative: 12.12
+                                }
+                            },
+                            {
+                                report_keys.current: {
+                                    report_keys.absolute: 149,
+                                    report_keys.relative: 5.82
+                                },
+                                report_keys.delta: {
+                                    report_keys.absolute: 0,
+                                    report_keys.relative: -0.00
+                                },
+                                report_keys.name: "RAM for global variables",
+                                report_keys.maximum: 2560,
+                                report_keys.previous: {
+                                    report_keys.absolute: 149,
+                                    report_keys.relative: 5.82
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            [
+                ["Board", "examples/Foo<br>flash", "%", "examples/Foo<br>RAM for global variables", "%"],
+                ["arduino:avr:leonardo", -12, -0.05, 0, -0.0]
+            ]
+        ),
+        (
+            [
+                ["Board", "examples/Foo<br>flash", "%", "examples/Foo<br>RAM for global variables", "%"],
+                ["arduino:avr:leonardo", -12, -0.05, 0, -0.0]
+            ],
+            {
+                report_keys.board: "arduino:mbed_portenta:envie_m7",
+                report_keys.sketches: [
+                    {
+                        report_keys.compilation_success: True,
+                        report_keys.name: "examples/Foo",
+                        report_keys.sizes: [
+                            {
+                                report_keys.current: {
+                                    report_keys.absolute: "N/A",
+                                    report_keys.relative: "N/A"
+                                },
+                                report_keys.name: "flash",
+                                report_keys.maximum: "N/A",
+                            },
+                            {
+                                report_keys.current: {
+                                    report_keys.absolute: "N/A",
+                                    report_keys.relative: "N/A"
+                                },
+                                report_keys.name: "RAM for global variables",
+                                report_keys.maximum: "N/A",
+                            }
+                        ]
+                    }
+                ]
+            },
+            [
+                ["Board", "examples/Foo<br>flash", "%", "examples/Foo<br>RAM for global variables", "%"],
+                ["arduino:avr:leonardo", -12, -0.05, 0, -0.0],
+                ["arduino:mbed_portenta:envie_m7", "N/A", "N/A", "N/A", "N/A"]
+            ]
+        )
+    ]
+)
+def test_add_detailed_report_row(report_data, fqbn_data, expected_report_data):
+    report_size_deltas = get_reportsizedeltas_object()
+    report_size_deltas.add_detailed_report_row(report_data, fqbn_data)
+
+    assert report_data == expected_report_data
+
+
 def test_generate_report():
     sketches_report_path = test_data_path.joinpath("size-deltas-reports-new")
     expected_deltas_report = (

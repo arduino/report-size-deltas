@@ -328,105 +328,15 @@ class ReportSizeDeltas:
 
         # Generate summary report data
         summary_report_data = [[fqbn_column_heading]]
-        row_number = 0
         for fqbns_data in sketches_reports:
             for fqbn_data in fqbns_data[self.ReportKeys.boards]:
-                row_number += 1
-                # Add a row to the report
-                row = ["" for _ in range(len(summary_report_data[0]))]
-                row[0] = fqbn_data[self.ReportKeys.board]
-                summary_report_data.append(row)
-
-                # Populate the row with data
-                for size_data in fqbn_data[self.ReportKeys.sizes]:
-                    # Determine column number for this memory type
-                    column_number = get_report_column_number(
-                        report=summary_report_data,
-                        column_heading=size_data[self.ReportKeys.name]
-                    )
-
-                    # Add the memory data to the cell
-                    if self.ReportKeys.delta in size_data:
-                        # Absolute data
-                        summary_report_data[row_number][column_number] = (
-                            self.get_summary_value(
-                                show_emoji=True,
-                                minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
-                                    self.ReportKeys.minimum],
-                                maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
-                                    self.ReportKeys.maximum]
-                            )
-                        )
-
-                        # Relative data
-                        summary_report_data[row_number][column_number + 1] = (
-                            self.get_summary_value(
-                                show_emoji=False,
-                                minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
-                                    self.ReportKeys.minimum],
-                                maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
-                                    self.ReportKeys.maximum]
-                            )
-                        )
-                    else:
-                        # Absolute data
-                        summary_report_data[row_number][column_number] = (
-                            self.get_summary_value(
-                                show_emoji=True,
-                                minimum=self.not_applicable_indicator,
-                                maximum=self.not_applicable_indicator
-                            )
-                        )
-
-                        # Relative data
-                        summary_report_data[row_number][column_number + 1] = (
-                            self.get_summary_value(
-                                show_emoji=False,
-                                minimum=self.not_applicable_indicator,
-                                maximum=self.not_applicable_indicator
-                            )
-                        )
+                self.add_summary_report_row(summary_report_data, fqbn_data)
 
         # Generate detailed report data
         full_report_data = [[fqbn_column_heading]]
-        row_number = 0
         for fqbns_data in sketches_reports:
             for fqbn_data in fqbns_data[self.ReportKeys.boards]:
-                row_number += 1
-                # Add a row to the report
-                row = ["" for _ in range(len(full_report_data[0]))]
-                row[0] = fqbn_data[self.ReportKeys.board]
-                full_report_data.append(row)
-
-                # Populate the row with data
-                for sketch in fqbn_data[self.ReportKeys.sketches]:
-                    for size_data in sketch[self.ReportKeys.sizes]:
-                        # Determine column number for this memory type
-                        column_number = get_report_column_number(
-                            report=full_report_data,
-                            column_heading=(
-                                sketch[self.ReportKeys.name] + "<br>"
-                                + size_data[self.ReportKeys.name]
-                            )
-                        )
-
-                        # Add the memory data to the cell
-                        if self.ReportKeys.delta in size_data:
-                            # Absolute
-                            full_report_data[row_number][column_number] = (
-                                size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
-                            )
-
-                            # Relative
-                            full_report_data[row_number][column_number + 1] = (
-                                size_data[self.ReportKeys.delta][self.ReportKeys.relative]
-                            )
-                        else:
-                            # Absolute
-                            full_report_data[row_number][column_number] = self.not_applicable_indicator
-
-                            # Relative
-                            full_report_data[row_number][column_number + 1] = self.not_applicable_indicator
+                self.add_detailed_report_row(full_report_data, fqbn_data)
 
         # Add comment heading
         report_markdown = self.report_key_beginning + sketches_reports[0][self.ReportKeys.commit_hash] + "**\n\n"
@@ -459,6 +369,112 @@ class ReportSizeDeltas:
 
         logger.debug("Report:\n" + report_markdown)
         return report_markdown
+
+    def add_summary_report_row(self, report_data, fqbn_data):
+        """Add a row to the summary report.
+
+        Keyword arguments:
+        report_data -- the report to add the row to
+        right_directory -- the data used to populate the row
+        """
+        row_number = len(report_data)
+        # Add a row to the report
+        row = ["" for _ in range(len(report_data[0]))]
+        row[0] = fqbn_data[self.ReportKeys.board]
+        report_data.append(row)
+
+        # Populate the row with data
+        for size_data in fqbn_data[self.ReportKeys.sizes]:
+            # Determine column number for this memory type
+            column_number = get_report_column_number(
+                report=report_data,
+                column_heading=size_data[self.ReportKeys.name]
+            )
+
+            # Add the memory data to the cell
+            if self.ReportKeys.delta in size_data:
+                # Absolute data
+                report_data[row_number][column_number] = (
+                    self.get_summary_value(
+                        show_emoji=True,
+                        minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
+                            self.ReportKeys.minimum],
+                        maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
+                            self.ReportKeys.maximum]
+                    )
+                )
+
+                # Relative data
+                report_data[row_number][column_number + 1] = (
+                    self.get_summary_value(
+                        show_emoji=False,
+                        minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
+                            self.ReportKeys.minimum],
+                        maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
+                            self.ReportKeys.maximum]
+                    )
+                )
+            else:
+                # Absolute data
+                report_data[row_number][column_number] = (
+                    self.get_summary_value(
+                        show_emoji=True,
+                        minimum=self.not_applicable_indicator,
+                        maximum=self.not_applicable_indicator
+                    )
+                )
+
+                # Relative data
+                report_data[row_number][column_number + 1] = (
+                    self.get_summary_value(
+                        show_emoji=False,
+                        minimum=self.not_applicable_indicator,
+                        maximum=self.not_applicable_indicator
+                    )
+                )
+
+    def add_detailed_report_row(self, report_data, fqbn_data):
+        """Add a row to the detailed report.
+
+        Keyword arguments:
+        report_data -- the report to add the row to
+        right_directory -- the data used to populate the row
+        """
+        row_number = len(report_data)
+        # Add a row to the report
+        row = ["" for _ in range(len(report_data[0]))]
+        row[0] = fqbn_data[self.ReportKeys.board]
+        report_data.append(row)
+
+        # Populate the row with data
+        for sketch in fqbn_data[self.ReportKeys.sketches]:
+            for size_data in sketch[self.ReportKeys.sizes]:
+                # Determine column number for this memory type
+                column_number = get_report_column_number(
+                    report=report_data,
+                    column_heading=(
+                        sketch[self.ReportKeys.name] + "<br>"
+                        + size_data[self.ReportKeys.name]
+                    )
+                )
+
+                # Add the memory data to the cell
+                if self.ReportKeys.delta in size_data:
+                    # Absolute
+                    report_data[row_number][column_number] = (
+                        size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
+                    )
+
+                    # Relative
+                    report_data[row_number][column_number + 1] = (
+                        size_data[self.ReportKeys.delta][self.ReportKeys.relative]
+                    )
+                else:
+                    # Absolute
+                    report_data[row_number][column_number] = self.not_applicable_indicator
+
+                    # Relative
+                    report_data[row_number][column_number + 1] = self.not_applicable_indicator
 
     def get_summary_value(self, show_emoji, minimum, maximum):
         """Return the Markdown formatted text for a memory change data cell in the report table.
