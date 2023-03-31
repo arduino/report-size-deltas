@@ -36,7 +36,7 @@ def set_verbosity(enable_verbosity):
     """Turn debug output on or off.
 
     Keyword arguments:
-    enable_verbosity -- this will generally be controlled via the script's --verbose command line argument
+    enable_verbosity -- enable/disable verbose output
                               (True, False)
     """
     # DEBUG: automatically generated output and all higher log level output
@@ -123,9 +123,9 @@ class ReportSizeDeltas:
                 pr_number = pr_data["number"]
                 pr_head_sha = pr_data["head"]["sha"]
                 print("::debug::Processing pull request number:", pr_number)
-                # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN will
-                # likely be used, which is owned by the github-actions bot, who doesn't have collaborator status. So
-                # locking the thread would cause the job to fail.
+                # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN owned by
+                # the github-actions bot will likely be used. The bot doesn't have collaborator status so it will
+                # generally be impossible to make reports on locked PRs.
                 if pr_data["locked"]:
                     print("::debug::PR locked, skipping")
                     continue
@@ -280,7 +280,7 @@ class ReportSizeDeltas:
         """Parse the artifact files and return a list containing the data.
 
         Keyword arguments:
-        artifact_folder_object -- object containing the data about the temporary folder that stores the markdown files
+        artifact_folder_object -- object containing the data about the temporary folder that stores the Markdown files
         """
         with artifact_folder_object as artifact_folder:
             # artifact_folder will be a string when running in non-local report mode
@@ -317,7 +317,7 @@ class ReportSizeDeltas:
         """Return the Markdown for the deltas report comment.
 
         Keyword arguments:
-        sketches_reports -- list of sketches_reports containing the data to generate the deltas report from
+        sketches_reports -- list of sketches reports containing the data to generate the deltas report from
         """
         # From https://github.community/t/maximum-length-for-the-comment-body-in-issues-and-pr/148867/2
         # > PR body/Issue comments are still stored in MySQL as a mediumblob with a maximum value length of 262,144.
@@ -466,7 +466,7 @@ class ReportSizeDeltas:
         Keyword arguments:
         show_emoji -- whether to add the emoji change indicator
         minimum -- minimum amount of change for this memory type
-        minimum -- maximum amount of change for this memory type
+        maximum -- maximum amount of change for this memory type
         """
         size_decrease_emoji = ":green_heart:"
         size_ambiguous_emoji = ":grey_question:"
@@ -550,7 +550,7 @@ class ReportSizeDeltas:
             except json.decoder.JSONDecodeError as exception:
                 # Output some information on the exception
                 logger.warning(str(exception.__class__.__name__) + ": " + str(exception))
-                # pass on the exception to the caller
+                # Pass the exception on to the caller
                 raise exception
 
             if not json_data:
@@ -722,13 +722,13 @@ def get_report_column_number(report, column_heading):
         # Absolute column
         # Add the heading
         report[0].append(column_heading)
-        # Expand the size of the last (current) row to match the new number of columns
+        # Expand the size of the final row (the current row) to match the new number of columns
         report[len(report) - 1].append("")
 
         # Relative column
         # Add the heading
         report[0].append(relative_column_heading)
-        # Expand the size of the last (current) row to match the new number of columns
+        # Expand the size of the final row (the current row) to match the new number of columns
         report[len(report) - 1].append("")
 
     return column_number
