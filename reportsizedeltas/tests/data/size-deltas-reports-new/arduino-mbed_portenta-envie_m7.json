@@ -1,0 +1,65 @@
+{
+  "commit_hash": "54815a7d1a30fcb0d77d98242b158e7845c0516d",
+  "commit_url": "https://example.com/foo",
+  "boards": [
+    {
+      "board": "arduino:mbed_portenta:envie_m7",
+      "sketches": [
+        {
+          "name": "examples/Bar",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": "N/A",
+              "current": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": "N/A",
+              "current": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
+            }
+          ]
+        },
+        {
+          "name": "examples/Foo",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": "N/A",
+              "current": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": "N/A",
+              "current": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
+            }
+          ]
+        }
+      ],
+      "sizes": [
+        {
+          "name": "flash",
+          "maximum": "N/A"
+        },
+        {
+          "name": "RAM for global variables",
+          "maximum": "N/A"
+        }
+      ]
+    }
+  ]
+}

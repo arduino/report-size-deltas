@@ -36,7 +36,7 @@ def set_verbosity(enable_verbosity):
     """Turn debug output on or off.
 
     Keyword arguments:
-    enable_verbosity -- this will generally be controlled via the script's --verbose command line argument
+    enable_verbosity -- enable/disable verbose output
                               (True, False)
     """
     # DEBUG: automatically generated output and all higher log level output
@@ -60,6 +60,7 @@ class ReportSizeDeltas:
     token -- GitHub access token
     """
     report_key_beginning = "**Memory usage change @ "
+    not_applicable_indicator = "N/A"
 
     class ReportKeys:
         """Key names used in the sketches report dictionary"""
@@ -122,9 +123,9 @@ class ReportSizeDeltas:
                 pr_number = pr_data["number"]
                 pr_head_sha = pr_data["head"]["sha"]
                 print("::debug::Processing pull request number:", pr_number)
-                # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN will
-                # likely be used, which is owned by the github-actions bot, who doesn't have collaborator status. So
-                # locking the thread would cause the job to fail.
+                # When a PR is locked, only collaborators may comment. The automatically generated GITHUB_TOKEN owned by
+                # the github-actions bot will likely be used. The bot doesn't have collaborator status so it will
+                # generally be impossible to make reports on locked PRs.
                 if pr_data["locked"]:
                     print("::debug::PR locked, skipping")
                     continue
@@ -279,7 +280,7 @@ class ReportSizeDeltas:
         """Parse the artifact files and return a list containing the data.
 
         Keyword arguments:
-        artifact_folder_object -- object containing the data about the temporary folder that stores the markdown files
+        artifact_folder_object -- object containing the data about the temporary folder that stores the Markdown files
         """
         with artifact_folder_object as artifact_folder:
             # artifact_folder will be a string when running in non-local report mode
@@ -291,6 +292,8 @@ class ReportSizeDeltas:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)
+                        or (self.ReportKeys.sizes
+                            not in report_data[self.ReportKeys.boards][0])
                         or (self.ReportKeys.maximum
                             not in report_data[self.ReportKeys.boards][0][self.ReportKeys.sizes][0])
                     ):
@@ -314,7 +317,7 @@ class ReportSizeDeltas:
         """Return the Markdown for the deltas report comment.
 
         Keyword arguments:
-        sketches_reports -- list of sketches_reports containing the data to generate the deltas report from
+        sketches_reports -- list of sketches reports containing the data to generate the deltas report from
         """
         # From https://github.community/t/maximum-length-for-the-comment-body-in-issues-and-pr/148867/2
         # > PR body/Issue comments are still stored in MySQL as a mediumblob with a maximum value length of 262,144.
@@ -325,73 +328,15 @@ class ReportSizeDeltas:
 
         # Generate summary report data
         summary_report_data = [[fqbn_column_heading]]
-        row_number = 0
         for fqbns_data in sketches_reports:
             for fqbn_data in fqbns_data[self.ReportKeys.boards]:
-                row_number += 1
-                # Add a row to the report
-                row = ["" for _ in range(len(summary_report_data[0]))]
-                row[0] = fqbn_data[self.ReportKeys.board]
-                summary_report_data.append(row)
-
-                # Populate the row with data
-                for size_data in fqbn_data[self.ReportKeys.sizes]:
-                    # Determine column number for this memory type
-                    column_number = get_report_column_number(
-                        report=summary_report_data,
-                        column_heading=size_data[self.ReportKeys.name]
-                    )
-
-                    # Add the absolute memory data to the cell
-                    summary_report_data[row_number][column_number] = (
-                        get_summary_value(
-                            show_emoji=True,
-                            minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][self.ReportKeys.minimum],
-                            maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][self.ReportKeys.maximum]
-                        )
-                    )
-
-                    # Add the relative memory data to the cell
-                    summary_report_data[row_number][column_number + 1] = (
-                        get_summary_value(
-                            show_emoji=False,
-                            minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][self.ReportKeys.minimum],
-                            maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][self.ReportKeys.maximum]
-                        )
-                    )
+                self.add_summary_report_row(summary_report_data, fqbn_data)
 
         # Generate detailed report data
         full_report_data = [[fqbn_column_heading]]
-        row_number = 0
         for fqbns_data in sketches_reports:
             for fqbn_data in fqbns_data[self.ReportKeys.boards]:
-                row_number += 1
-                # Add a row to the report
-                row = ["" for _ in range(len(full_report_data[0]))]
-                row[0] = fqbn_data[self.ReportKeys.board]
-                full_report_data.append(row)
-
-                # Populate the row with data
-                for sketch in fqbn_data[self.ReportKeys.sketches]:
-                    for size_data in sketch[self.ReportKeys.sizes]:
-                        # Determine column number for this memory type
-                        column_number = get_report_column_number(
-                            report=full_report_data,
-                            column_heading=(
-                                sketch[self.ReportKeys.name] + "<br>"
-                                + size_data[self.ReportKeys.name]
-                            )
-                        )
-
-                        # Add the absolute memory data to the cell
-                        full_report_data[row_number][column_number] = (
-                            size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
-                        )
-
-                        # Add the relative memory data to the cell
-                        full_report_data[row_number][column_number + 1] = (
-                            size_data[self.ReportKeys.delta][self.ReportKeys.relative]
-                        )
+                self.add_detailed_report_row(full_report_data, fqbn_data)
 
         # Add comment heading
         report_markdown = self.report_key_beginning + sketches_reports[0][self.ReportKeys.commit_hash] + "**\n\n"
@@ -424,6 +369,151 @@ class ReportSizeDeltas:
 
         logger.debug("Report:\n" + report_markdown)
         return report_markdown
+
+    def add_summary_report_row(self, report_data, fqbn_data):
+        """Add a row to the summary report.
+
+        Keyword arguments:
+        report_data -- the report to add the row to
+        right_directory -- the data used to populate the row
+        """
+        row_number = len(report_data)
+        # Add a row to the report
+        row = ["" for _ in range(len(report_data[0]))]
+        row[0] = fqbn_data[self.ReportKeys.board]
+        report_data.append(row)
+
+        # Populate the row with data
+        for size_data in fqbn_data[self.ReportKeys.sizes]:
+            # Determine column number for this memory type
+            column_number = get_report_column_number(
+                report=report_data,
+                column_heading=size_data[self.ReportKeys.name]
+            )
+
+            # Add the memory data to the cell
+            if self.ReportKeys.delta in size_data:
+                # Absolute data
+                report_data[row_number][column_number] = (
+                    self.get_summary_value(
+                        show_emoji=True,
+                        minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
+                            self.ReportKeys.minimum],
+                        maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
+                            self.ReportKeys.maximum]
+                    )
+                )
+
+                # Relative data
+                report_data[row_number][column_number + 1] = (
+                    self.get_summary_value(
+                        show_emoji=False,
+                        minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
+                            self.ReportKeys.minimum],
+                        maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
+                            self.ReportKeys.maximum]
+                    )
+                )
+            else:
+                # Absolute data
+                report_data[row_number][column_number] = (
+                    self.get_summary_value(
+                        show_emoji=True,
+                        minimum=self.not_applicable_indicator,
+                        maximum=self.not_applicable_indicator
+                    )
+                )
+
+                # Relative data
+                report_data[row_number][column_number + 1] = (
+                    self.get_summary_value(
+                        show_emoji=False,
+                        minimum=self.not_applicable_indicator,
+                        maximum=self.not_applicable_indicator
+                    )
+                )
+
+    def add_detailed_report_row(self, report_data, fqbn_data):
+        """Add a row to the detailed report.
+
+        Keyword arguments:
+        report_data -- the report to add the row to
+        right_directory -- the data used to populate the row
+        """
+        row_number = len(report_data)
+        # Add a row to the report
+        row = ["" for _ in range(len(report_data[0]))]
+        row[0] = fqbn_data[self.ReportKeys.board]
+        report_data.append(row)
+
+        # Populate the row with data
+        for sketch in fqbn_data[self.ReportKeys.sketches]:
+            for size_data in sketch[self.ReportKeys.sizes]:
+                # Determine column number for this memory type
+                column_number = get_report_column_number(
+                    report=report_data,
+                    column_heading=(
+                        sketch[self.ReportKeys.name] + "<br>"
+                        + size_data[self.ReportKeys.name]
+                    )
+                )
+
+                # Add the memory data to the cell
+                if self.ReportKeys.delta in size_data:
+                    # Absolute
+                    report_data[row_number][column_number] = (
+                        size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
+                    )
+
+                    # Relative
+                    report_data[row_number][column_number + 1] = (
+                        size_data[self.ReportKeys.delta][self.ReportKeys.relative]
+                    )
+                else:
+                    # Absolute
+                    report_data[row_number][column_number] = self.not_applicable_indicator
+
+                    # Relative
+                    report_data[row_number][column_number + 1] = self.not_applicable_indicator
+
+    def get_summary_value(self, show_emoji, minimum, maximum):
+        """Return the Markdown formatted text for a memory change data cell in the report table.
+
+        Keyword arguments:
+        show_emoji -- whether to add the emoji change indicator
+        minimum -- minimum amount of change for this memory type
+        maximum -- maximum amount of change for this memory type
+        """
+        size_decrease_emoji = ":green_heart:"
+        size_ambiguous_emoji = ":grey_question:"
+        size_increase_emoji = ":small_red_triangle:"
+
+        value = None
+        if minimum == self.not_applicable_indicator:
+            value = self.not_applicable_indicator
+            emoji = None
+        elif minimum < 0 and maximum <= 0:
+            emoji = size_decrease_emoji
+        elif minimum == 0 and maximum == 0:
+            emoji = None
+        elif minimum >= 0 and maximum > 0:
+            emoji = size_increase_emoji
+        else:
+            emoji = size_ambiguous_emoji
+
+        if value is None:
+            # Prepend + to positive values to improve readability
+            if minimum > 0:
+                minimum = "+" + str(minimum)
+            if maximum > 0:
+                maximum = "+" + str(maximum)
+
+            value = str(minimum) + " - " + str(maximum)
+
+        if show_emoji and (emoji is not None):
+            value = emoji + " " + value
+
+        return value
 
     def comment_report(self, pr_number, report_markdown):
         """Submit the report as a comment on the PR thread
@@ -476,7 +566,7 @@ class ReportSizeDeltas:
             except json.decoder.JSONDecodeError as exception:
                 # Output some information on the exception
                 logger.warning(str(exception.__class__.__name__) + ": " + str(exception))
-                # pass on the exception to the caller
+                # Pass the exception on to the caller
                 raise exception
 
             if not json_data:
@@ -648,57 +738,16 @@ def get_report_column_number(report, column_heading):
         # Absolute column
         # Add the heading
         report[0].append(column_heading)
-        # Expand the size of the last (current) row to match the new number of columns
+        # Expand the size of the final row (the current row) to match the new number of columns
         report[len(report) - 1].append("")
 
         # Relative column
         # Add the heading
         report[0].append(relative_column_heading)
-        # Expand the size of the last (current) row to match the new number of columns
+        # Expand the size of the final row (the current row) to match the new number of columns
         report[len(report) - 1].append("")
 
     return column_number
-
-
-def get_summary_value(show_emoji, minimum, maximum):
-    """Return the Markdown formatted text for a memory change data cell in the report table.
-
-    Keyword arguments:
-    show_emoji -- whether to add the emoji change indicator
-    minimum -- minimum amount of change for this memory type
-    minimum -- maximum amount of change for this memory type
-    """
-    size_decrease_emoji = ":green_heart:"
-    size_ambiguous_emoji = ":grey_question:"
-    size_increase_emoji = ":small_red_triangle:"
-    not_applicable_indicator = "N/A"
-
-    value = None
-    if minimum == not_applicable_indicator:
-        value = not_applicable_indicator
-        emoji = None
-    elif minimum < 0 and maximum <= 0:
-        emoji = size_decrease_emoji
-    elif minimum == 0 and maximum == 0:
-        emoji = None
-    elif minimum >= 0 and maximum > 0:
-        emoji = size_increase_emoji
-    else:
-        emoji = size_ambiguous_emoji
-
-    if value is None:
-        # Prepend + to positive values to improve readability
-        if minimum > 0:
-            minimum = "+" + str(minimum)
-        if maximum > 0:
-            maximum = "+" + str(maximum)
-
-        value = str(minimum) + " - " + str(maximum)
-
-    if show_emoji and (emoji is not None):
-        value = emoji + " " + value
-
-    return value
 
 
 def generate_markdown_table(row_list):
