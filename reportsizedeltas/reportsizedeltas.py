@@ -380,7 +380,7 @@ class ReportSizeDeltas:
         row_number = len(report_data)
         # Add a row to the report
         row = ["" for _ in range(len(report_data[0]))]
-        row[0] = fqbn_data[self.ReportKeys.board]
+        row[0] = "`{board_name}`".format(board_name=fqbn_data[self.ReportKeys.board])
         report_data.append(row)
 
         # Populate the row with data
@@ -443,7 +443,7 @@ class ReportSizeDeltas:
         row_number = len(report_data)
         # Add a row to the report
         row = ["" for _ in range(len(report_data[0]))]
-        row[0] = fqbn_data[self.ReportKeys.board]
+        row[0] = "`{board_name}`".format(board_name=fqbn_data[self.ReportKeys.board])
         report_data.append(row)
 
         # Populate the row with data
@@ -453,8 +453,10 @@ class ReportSizeDeltas:
                 column_number = get_report_column_number(
                     report=report_data,
                     column_heading=(
-                        sketch[self.ReportKeys.name] + "<br>"
-                        + size_data[self.ReportKeys.name]
+                        "`{sketch_name}`<br>{size_name}".format(
+                            sketch_name=sketch[self.ReportKeys.name],
+                            size_name=size_data[self.ReportKeys.name]
+                        )
                     )
                 )
 
@@ -776,7 +778,16 @@ def generate_csv_table(row_list):
     csv_string = io.StringIO()
     csv_writer = csv.writer(csv_string, lineterminator="\n")
     for row in row_list:
-        csv_writer.writerow(row)
+        cleaned_row = []
+        for cell in row:
+            cleaned_cell = cell
+            if isinstance(cleaned_cell, str):
+                # The "code span" markup is not needed in the CSV report.
+                cleaned_cell = cleaned_cell.replace("`", "")
+
+            cleaned_row.append(cleaned_cell)
+
+        csv_writer.writerow(cleaned_row)
 
     return csv_string.getvalue()
 
