@@ -50,8 +50,23 @@ jobs:
       - name: Display code coverage report
         run: coverage report
 
+      # A token is used to avoid intermittent spurious job failures caused by rate limiting.
+      - name: Set up Codecov upload token
+        run: |
+          if [[ "${{ github.repository }}" == "arduino/report-size-deltas" ]]; then
+            # In order to avoid uploads of data from forks, only use the token for runs in the parent repo.
+            # Token is intentionally exposed.
+            # See: https://community.codecov.com/t/upload-issues-unable-to-locate-build-via-github-actions-api/3954
+            CODECOV_TOKEN="3889efcb-4ed3-4d07-980a-99a3896bd9b8"
+          else
+            # codecov/codecov-action does unauthenticated upload if empty string is passed via the `token` input.
+            CODECOV_TOKEN=""
+          fi
+          echo "CODECOV_TOKEN=$CODECOV_TOKEN" >> "$GITHUB_ENV"
+
       - name: Upload coverage report to Codecov
         uses: codecov/codecov-action@v3
         with:
           file: ${{ env.COVERAGE_DATA_FILENAME }}
           fail_ci_if_error: true
+          token: ${{ env.CODECOV_TOKEN }}
