@@ -83,11 +83,11 @@ jobs:
   compile:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - uses: arduino/compile-sketches@v1
         with:
           enable-deltas-report: true
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: sketches-reports
           path: sketches-reports
@@ -110,7 +110,7 @@ jobs:
           - "arduino:avr:uno"
           - "arduino:samd:mkrzero"
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
       - uses: arduino/compile-sketches@v1
         with:
@@ -120,7 +120,7 @@ jobs:
 
       # This step is needed to pass the size data to the report job 
       - name: Upload sketches report to workflow artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
@@ -133,7 +133,7 @@ jobs:
     steps:
       # This step is needed to get the size data produced by the compile jobs
       - name: Download sketches reports artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
