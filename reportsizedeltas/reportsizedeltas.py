@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-def main():
+def main() -> None:
     set_verbosity(enable_verbosity=False)
 
     if "INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME" in os.environ:
@@ -32,7 +32,7 @@ def main():
     report_size_deltas.report_size_deltas()
 
 
-def set_verbosity(enable_verbosity):
+def set_verbosity(enable_verbosity: bool) -> None:
     """Turn debug output on or off.
 
     Keyword arguments:
@@ -52,7 +52,7 @@ def set_verbosity(enable_verbosity):
 
 
 class ReportSizeDeltas:
-    """Methods for creating and submitting the memory usage change reports
+    """Methods for creating and submitting the memory usage change reports.
 
     Keyword arguments:
     repository_name -- repository owner and name e.g., octocat/Hello-World
@@ -63,7 +63,7 @@ class ReportSizeDeltas:
     not_applicable_indicator = "N/A"
 
     class ReportKeys:
-        """Key names used in the sketches report dictionary"""
+        """Key names used in the sketches report dictionary."""
         boards = "boards"
         board = "board"
         commit_hash = "commit_hash"
@@ -80,12 +80,12 @@ class ReportSizeDeltas:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name, sketches_reports_source, token):
+    def __init__(self, repository_name: str, sketches_reports_source: str, token: str) -> None:
         self.repository_name = repository_name
         self.sketches_reports_source = sketches_reports_source
         self.token = token
 
-    def report_size_deltas(self):
+    def report_size_deltas(self) -> None:
         """Comment a report of memory usage change to pull request(s)."""
         if os.environ["GITHUB_EVENT_NAME"] == "pull_request":
             # The sketches reports will be in a local folder location specified by the user
@@ -95,7 +95,7 @@ class ReportSizeDeltas:
             # Scan the repository's pull requests and comment memory usage change reports where appropriate.
             self.report_size_deltas_from_workflow_artifacts()
 
-    def report_size_deltas_from_local_reports(self):
+    def report_size_deltas_from_local_reports(self) -> None:
         """Comment a report of memory usage change to the pull request."""
         sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source)
         sketches_reports = self.get_sketches_reports(artifact_folder_object=sketches_reports_folder)
@@ -108,7 +108,7 @@ class ReportSizeDeltas:
 
             self.comment_report(pr_number=pr_number, report_markdown=report)
 
-    def report_size_deltas_from_workflow_artifacts(self):
+    def report_size_deltas_from_workflow_artifacts(self) -> None:
         """Scan the repository's pull requests and comment memory usage change reports where appropriate."""
         # Get the repository's pull requests
         logger.debug("Getting PRs for " + self.repository_name)
@@ -164,8 +164,8 @@ class ReportSizeDeltas:
             page_number += 1
             page_count = api_data["page_count"]
 
-    def report_exists(self, pr_number, pr_head_sha):
-        """Return whether a report has already been commented to the pull request thread for the latest workflow run
+    def report_exists(self, pr_number: int, pr_head_sha: str) -> bool:
+        """Return whether a report has already been commented to the pull request thread for the latest workflow run.
 
         Keyword arguments:
         pr_number -- number of the pull request to check
@@ -191,8 +191,8 @@ class ReportSizeDeltas:
         # No reports found for the PR's head SHA
         return False
 
-    def get_artifact_download_url_for_sha(self, pr_user_login, pr_head_ref, pr_head_sha):
-        """Return the report artifact download URL associated with the given head commit hash
+    def get_artifact_download_url_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str) -> str | None:
+        """Return the report artifact download URL associated with the given head commit hash.
 
         Keyword arguments:
         pr_user_login -- user name of the PR author (used to reduce number of GitHub API requests)
@@ -223,8 +223,8 @@ class ReportSizeDeltas:
         # No matching artifact found
         return None
 
-    def get_artifact_download_url_for_run(self, run_id):
-        """Return the report artifact download URL associated with the given GitHub Actions workflow run
+    def get_artifact_download_url_for_run(self, run_id: str) -> str | None:
+        """Return the report artifact download URL associated with the given GitHub Actions workflow run.
 
         Keyword arguments:
         run_id -- GitHub Actions workflow run ID
@@ -249,8 +249,8 @@ class ReportSizeDeltas:
         # No matching artifact found
         return None
 
-    def get_artifact(self, artifact_download_url):
-        """Download and unzip the artifact and return an object for the temporary directory containing it
+    def get_artifact(self, artifact_download_url: str):
+        """Download and unzip the artifact and return an object for the temporary directory containing it.
 
         Keyword arguments:
         artifact_download_url -- URL to download the artifact from GitHub
@@ -313,7 +313,7 @@ class ReportSizeDeltas:
 
         return sketches_reports
 
-    def generate_report(self, sketches_reports):
+    def generate_report(self, sketches_reports) -> str:
         """Return the Markdown for the deltas report comment.
 
         Keyword arguments:
@@ -370,7 +370,7 @@ class ReportSizeDeltas:
         logger.debug("Report:\n" + report_markdown)
         return report_markdown
 
-    def add_summary_report_row(self, report_data, fqbn_data):
+    def add_summary_report_row(self, report_data, fqbn_data) -> None:
         """Add a row to the summary report.
 
         Keyword arguments:
@@ -433,7 +433,7 @@ class ReportSizeDeltas:
                     )
                 )
 
-    def add_detailed_report_row(self, report_data, fqbn_data):
+    def add_detailed_report_row(self, report_data, fqbn_data) -> None:
         """Add a row to the detailed report.
 
         Keyword arguments:
@@ -478,7 +478,7 @@ class ReportSizeDeltas:
                     # Relative
                     report_data[row_number][column_number + 1] = self.not_applicable_indicator
 
-    def get_summary_value(self, show_emoji, minimum, maximum):
+    def get_summary_value(self, show_emoji: bool, minimum, maximum) -> str:
         """Return the Markdown formatted text for a memory change data cell in the report table.
 
         Keyword arguments:
@@ -517,8 +517,8 @@ class ReportSizeDeltas:
 
         return value
 
-    def comment_report(self, pr_number, report_markdown):
-        """Submit the report as a comment on the PR thread
+    def comment_report(self, pr_number: int, report_markdown: str) -> None:
+        """Submit the report as a comment on the PR thread.
 
         Keyword arguments:
         pr_number -- pull request number to submit the report to
@@ -536,7 +536,7 @@ class ReportSizeDeltas:
 
         self.http_request(url=url, data=report_data)
 
-    def api_request(self, request, request_parameters="", page_number=1):
+    def api_request(self, request: str, request_parameters: str = "", page_number: int = 1):
         """Do a GitHub API request. Return a dictionary containing:
         json_data -- JSON object containing the response
         additional_pages -- indicates whether more pages of results remain (True, False)
@@ -552,7 +552,7 @@ class ReportSizeDeltas:
         return self.get_json_response(url="https://api.github.com/" + request + "?" + request_parameters + "&page="
                                           + str(page_number) + "&per_page=100")
 
-    def get_json_response(self, url):
+    def get_json_response(self, url: str):
         """Load the specified URL and return a dictionary:
         json_data -- JSON object containing the response
         additional_pages -- indicates whether more pages of results remain (True, False)
@@ -587,7 +587,7 @@ class ReportSizeDeltas:
         except Exception as exception:
             raise exception
 
-    def http_request(self, url, data=None):
+    def http_request(self, url: str, data: str | None = None) -> dict[str]:
         """Make a request and return a dictionary:
         read -- the response
         info -- headers
@@ -603,7 +603,7 @@ class ReportSizeDeltas:
                     "headers": response_object.info(),
                     "url": response_object.geturl()}
 
-    def raw_http_request(self, url, data=None):
+    def raw_http_request(self, url: str, data: str | None = None):
         """Make a request and return an object containing the response.
 
         Keyword arguments:
@@ -635,7 +635,7 @@ class ReportSizeDeltas:
         # Maximum retries reached without successfully opening URL
         raise TimeoutError("Maximum number of URL load retries exceeded")
 
-    def handle_rate_limiting(self):
+    def handle_rate_limiting(self) -> None:
         """Check whether the GitHub API request limit has been reached.
         If so, exit with exit status 0.
         """
@@ -655,7 +655,7 @@ class ReportSizeDeltas:
             sys.exit(0)
 
 
-def determine_urlopen_retry(exception):
+def determine_urlopen_retry(exception) -> bool:
     """Determine whether the exception warrants another attempt at opening the URL.
     If so, delay then return True. Otherwise, return False.
 
@@ -703,8 +703,8 @@ def determine_urlopen_retry(exception):
     return False
 
 
-def get_page_count(link_header):
-    """Return the number of pages of the API response
+def get_page_count(link_header: str | None) -> int:
+    """Return the number of pages of the API response.
 
     Keyword arguments:
     link_header -- Link header of the HTTP response
@@ -723,7 +723,7 @@ def get_page_count(link_header):
     return page_count
 
 
-def get_report_column_number(report, column_heading):
+def get_report_column_number(report, column_heading: str) -> int:
     """Return the column number of the given heading.
 
     Keyword arguments:
@@ -752,8 +752,8 @@ def get_report_column_number(report, column_heading):
     return column_number
 
 
-def generate_markdown_table(row_list):
-    """Return the data formatted as a Markdown table
+def generate_markdown_table(row_list) -> str:
+    """Return the data formatted as a Markdown table.
 
     Keyword arguments:
     row_list -- list containing the data
@@ -769,7 +769,7 @@ def generate_markdown_table(row_list):
     return markdown_table
 
 
-def generate_csv_table(row_list):
+def generate_csv_table(row_list) -> str:
     """Return a string containing the supplied data formatted as CSV.
 
     Keyword arguments:
