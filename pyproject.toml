@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "arduino/report-size-deltas"
+version = "0.0.0"
+description = ""
+authors = ["Arduino <info@arduino.cc>"]
+
+[tool.poetry.dependencies]
+python = "3.11.*"
+
+[tool.poetry.group.dev.dependencies]
+codespell = "2.2.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
