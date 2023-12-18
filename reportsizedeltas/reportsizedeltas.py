@@ -380,7 +380,7 @@ class ReportSizeDeltas:
         row_number = len(report_data)
         # Add a row to the report
         row = ["" for _ in range(len(report_data[0]))]
-        row[0] = "`{board_name}`".format(board_name=fqbn_data[self.ReportKeys.board])
+        row[0] = f"`{fqbn_data[self.ReportKeys.board]}`"
         report_data.append(row)
 
         # Populate the row with data
@@ -443,7 +443,7 @@ class ReportSizeDeltas:
         row_number = len(report_data)
         # Add a row to the report
         row = ["" for _ in range(len(report_data[0]))]
-        row[0] = "`{board_name}`".format(board_name=fqbn_data[self.ReportKeys.board])
+        row[0] = f"`{fqbn_data[self.ReportKeys.board]}`"
         report_data.append(row)
 
         # Populate the row with data
