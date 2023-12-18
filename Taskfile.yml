@@ -10,6 +10,12 @@ tasks:
     desc: Check for problems with the project
     deps:
       - task: npm:validate
+      - task: general:check-spelling
+
+  fix:
+    desc: Make automated corrections to the project's files
+    deps:
+      - task: general:correct-spelling
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/spell-check-task/Taskfile.yml
   general:check-spelling:
@@ -27,13 +33,19 @@ tasks:
     cmds:
       - poetry run codespell --write-changes
 
+  # Parameter variables:
+  # - PROJECT_PATH: path of the npm-managed project. Default value: "./"
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/npm-task/Taskfile.yml
   npm:install-deps:
     desc: Install dependencies managed by npm
-    run: once
+    dir: |
+      "{{default "./" .PROJECT_PATH}}"
     cmds:
       - npm install
 
+
+  # Parameter variables:
+  # - PROJECT_PATH: path of the npm-managed project. Default value: "./"
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-npm-task/Taskfile.yml
   npm:validate:
     desc: Validate npm configuration files against their JSON schema
@@ -70,7 +82,8 @@ tasks:
       STYLELINTRC_SCHEMA_URL: https://json.schemastore.org/stylelintrc.json
       STYLELINTRC_SCHEMA_PATH:
         sh: task utility:mktemp-file TEMPLATE="stylelintrc-schema-XXXXXXXXXX.json"
-      INSTANCE_PATH: "**/package.json"
+      INSTANCE_PATH: >-
+        {{default "." .PROJECT_PATH}}/package.json
       PROJECT_FOLDER:
         sh: pwd
       WORKING_FOLDER:
