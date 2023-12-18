@@ -11,11 +11,14 @@ tasks:
     deps:
       - task: npm:validate
       - task: general:check-spelling
+      - task: npm:validate
+      - task: poetry:validate
 
   fix:
     desc: Make automated corrections to the project's files
     deps:
       - task: general:correct-spelling
+      - task: poetry:sync
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/spell-check-task/Taskfile.yml
   general:check-spelling:
