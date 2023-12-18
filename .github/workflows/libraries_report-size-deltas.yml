@@ -14,6 +14,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions: {}
 
     env:
       PYTHON_PROJECT_PATH: ${GITHUB_WORKSPACE}/reportsizedeltas

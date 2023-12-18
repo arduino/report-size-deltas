@@ -25,6 +25,8 @@ jobs:
   local-source:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
 
     steps:
       - name: Checkout repository

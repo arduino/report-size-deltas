@@ -4,7 +4,7 @@
 [![Check Taskfiles status](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml)
 [![Tests](https://github.com/arduino/report-size-deltas/workflows/libraries/report-size-deltas%20workflow/badge.svg)](https://github.com/arduino/report-size-deltas/actions?workflow=libraries/report-size-deltas+workflow)
 [![Integration Tests](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml)
-[![Spell Check](https://github.com/arduino/report-size-deltas/workflows/Spell%20Check/badge.svg)](https://github.com/arduino/report-size-deltas/actions?workflow=Spell+Check)
+[![Spell Check status](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml)
 [![Sync Labels status](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml)
 [![codecov](https://codecov.io/gh/arduino/report-size-deltas/branch/master/graph/badge.svg)](https://codecov.io/gh/arduino/report-size-deltas)
 
