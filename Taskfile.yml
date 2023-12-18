@@ -13,12 +13,14 @@ tasks:
       - task: general:check-spelling
       - task: npm:validate
       - task: poetry:validate
+      - task: python:lint
 
   fix:
     desc: Make automated corrections to the project's files
     deps:
       - task: general:correct-spelling
       - task: poetry:sync
+      - task: python:format
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/spell-check-task/Taskfile.yml
   general:check-spelling:
@@ -136,6 +138,22 @@ tasks:
         poetry \
           check \
             --lock
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-python-task/Taskfile.yml
+  python:format:
+    desc: Format Python files
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - poetry run black .
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-python-task/Taskfile.yml
+  python:lint:
+    desc: Lint Python code
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - poetry run flake8 --show-source
 
   # Make a temporary file named according to the passed TEMPLATE variable and print the path passed to stdout
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/windows-task/Taskfile.yml
