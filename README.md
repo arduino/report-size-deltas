@@ -1,9 +1,11 @@
 # `arduino/report-size-deltas` action
 
+[![Check Markdown status](https://github.com/arduino/report-size-deltas/actions/workflows/check-markdown-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-markdown-task.yml)
 [![Check npm status](https://github.com/arduino/report-size-deltas/actions/workflows/check-npm-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-npm-task.yml)
 [![Check Poetry status](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml)
 [![Check Python status](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml)
 [![Check Taskfiles status](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml)
+[![Check ToC status](https://github.com/arduino/report-size-deltas/actions/workflows/check-toc-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-toc-task.yml)
 [![Integration Tests](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml)
 [![Spell Check status](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml)
 [![Sync Labels status](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml)
@@ -37,15 +39,15 @@ This action comments on the pull request with a report on the resulting change i
 
 The action can be used in two ways:
 
-#### Run from a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule)
+#### Run from a scheduled workflow
 
 Recommended for public repositories.
 
-The use of a scheduled workflow is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
+The use of a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule) is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
 
 In this usage, the `sketches-reports-source` defines the name of the workflow artifact that contains the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
 
-#### Run from the same workflow as the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action
+#### Run from the same workflow as the `arduino/compile-sketches` action
 
 Recommended for private repositories.
 
