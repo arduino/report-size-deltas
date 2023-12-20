@@ -1,5 +1,6 @@
 # `arduino/report-size-deltas` action
 
+[![Check Markdown status](https://github.com/arduino/report-size-deltas/actions/workflows/check-markdown-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-markdown-task.yml)
 [![Check npm status](https://github.com/arduino/report-size-deltas/actions/workflows/check-npm-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-npm-task.yml)
 [![Check Poetry status](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml)
 [![Check Python status](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml)
