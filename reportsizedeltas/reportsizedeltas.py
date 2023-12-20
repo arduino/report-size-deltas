@@ -581,7 +581,7 @@ class ReportSizeDeltas:
         except Exception as exception:
             raise exception
 
-    def http_request(self, url: str, data: str | None = None) -> dict[str]:
+    def http_request(self, url: str, data: str | None = None):
         """Make a request and return a dictionary:
         read -- the response
         info -- headers
