@@ -248,7 +248,6 @@ tasks:
       - task: poetry:install-deps
     cmds:
       - |
-        export PYTHONPATH="${PWD}/{{.PYTHON_PROJECT_PATH}}"
         poetry run \
           coverage run \
             --source="{{.PYTHON_PROJECT_PATH}}" \
