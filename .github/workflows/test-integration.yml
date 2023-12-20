@@ -3,18 +3,18 @@ name: Run integration tests
 on:
   pull_request:
     paths:
-      - '.github/workflows/test-integration.yml'
-      - '.github/workflows/testdata/**'
-      - 'action.yml'
-      - 'Dockerfile'
-      - 'reportsizedeltas/**'
+      - ".github/workflows/test-integration.yml"
+      - ".github/workflows/testdata/**"
+      - "action.yml"
+      - "Dockerfile"
+      - "reportsizedeltas/**"
   push:
     paths:
-      - '.github/workflows/test-integration.yml'
-      - '.github/workflows/testdata/**'
-      - 'action.yml'
-      - 'Dockerfile'
-      - 'reportsizedeltas/**'
+      - ".github/workflows/test-integration.yml"
+      - ".github/workflows/testdata/**"
+      - "action.yml"
+      - "Dockerfile"
+      - "reportsizedeltas/**"
   schedule:
     # Run daily at 8 AM UTC to catch breakage caused by changes to external resources.
     - cron: "0 8 * * *"
