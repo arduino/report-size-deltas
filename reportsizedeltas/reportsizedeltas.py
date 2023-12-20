@@ -21,13 +21,17 @@ def main() -> None:
     set_verbosity(enable_verbosity=False)
 
     if "INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME" in os.environ:
-        print("::warning::The size-deltas-report-artifact-name input is deprecated. Use the equivalent input: "
-              "sketches-reports-source instead.")
+        print(
+            "::warning::The size-deltas-report-artifact-name input is deprecated. Use the equivalent input: "
+            "sketches-reports-source instead."
+        )
         os.environ["INPUT_SKETCHES-REPORTS-SOURCE"] = os.environ["INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME"]
 
-    report_size_deltas = ReportSizeDeltas(repository_name=os.environ["GITHUB_REPOSITORY"],
-                                          sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
-                                          token=os.environ["INPUT_GITHUB-TOKEN"])
+    report_size_deltas = ReportSizeDeltas(
+        repository_name=os.environ["GITHUB_REPOSITORY"],
+        sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
+        token=os.environ["INPUT_GITHUB-TOKEN"],
+    )
 
     report_size_deltas.report_size_deltas()
 
@@ -59,11 +63,13 @@ class ReportSizeDeltas:
     artifact_name -- name of the workflow artifact that contains the memory usage data
     token -- GitHub access token
     """
+
     report_key_beginning = "**Memory usage change @ "
     not_applicable_indicator = "N/A"
 
     class ReportKeys:
         """Key names used in the sketches report dictionary."""
+
         boards = "boards"
         board = "board"
         commit_hash = "commit_hash"
@@ -115,8 +121,7 @@ class ReportSizeDeltas:
         page_number = 1
         page_count = 1
         while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/pulls",
-                                        page_number=page_number)
+            api_data = self.api_request(request="repos/" + self.repository_name + "/pulls", page_number=page_number)
             prs_data = api_data["json_data"]
             for pr_data in prs_data:
                 # Note: closed PRs are not listed in the API response
@@ -130,16 +135,14 @@ class ReportSizeDeltas:
                     print("::debug::PR locked, skipping")
                     continue
 
-                if self.report_exists(pr_number=pr_number,
-                                      pr_head_sha=pr_head_sha):
+                if self.report_exists(pr_number=pr_number, pr_head_sha=pr_head_sha):
                     # Go on to the next PR
                     print("::debug::Report already exists")
                     continue
 
                 artifact_download_url = self.get_artifact_download_url_for_sha(
-                    pr_user_login=pr_data["user"]["login"],
-                    pr_head_ref=pr_data["head"]["ref"],
-                    pr_head_sha=pr_head_sha)
+                    pr_user_login=pr_data["user"]["login"], pr_head_ref=pr_data["head"]["ref"], pr_head_sha=pr_head_sha
+                )
                 if artifact_download_url is None:
                     # Go on to the next PR
                     print("::debug::No sketches report artifact found")
@@ -175,9 +178,10 @@ class ReportSizeDeltas:
         page_number = 1
         page_count = 1
         while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/issues/" + str(pr_number)
-                                                + "/comments",
-                                        page_number=page_number)
+            api_data = self.api_request(
+                request="repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments",
+                page_number=page_number,
+            )
 
             comments_data = api_data["json_data"]
             for comment_data in comments_data:
@@ -203,10 +207,15 @@ class ReportSizeDeltas:
         page_number = 1
         page_count = 1
         while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/actions/runs",
-                                        request_parameters="actor=" + pr_user_login + "&branch=" + pr_head_ref
-                                                           + "&event=pull_request&status=completed",
-                                        page_number=page_number)
+            api_data = self.api_request(
+                request="repos/" + self.repository_name + "/actions/runs",
+                request_parameters="actor="
+                + pr_user_login
+                + "&branch="
+                + pr_head_ref
+                + "&event=pull_request&status=completed",
+                page_number=page_number,
+            )
             runs_data = api_data["json_data"]
 
             # Find the runs with the head SHA of the PR (there may be multiple runs)
@@ -233,9 +242,10 @@ class ReportSizeDeltas:
         page_number = 1
         page_count = 1
         while page_number <= page_count:
-            api_data = self.api_request(request="repos/" + self.repository_name + "/actions/runs/"
-                                                + str(run_id) + "/artifacts",
-                                        page_number=page_number)
+            api_data = self.api_request(
+                request="repos/" + self.repository_name + "/actions/runs/" + str(run_id) + "/artifacts",
+                page_number=page_number,
+            )
             artifacts_data = api_data["json_data"]
 
             for artifact_data in artifacts_data["artifacts"]:
@@ -259,8 +269,9 @@ class ReportSizeDeltas:
         artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
         try:
             # Download artifact
-            with open(file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip",
-                      mode="wb") as out_file:
+            with open(
+                file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip", mode="wb"
+            ) as out_file:
                 with self.raw_http_request(url=artifact_download_url) as fp:
                     out_file.write(fp.read())
 
@@ -292,10 +303,11 @@ class ReportSizeDeltas:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)
-                        or (self.ReportKeys.sizes
-                            not in report_data[self.ReportKeys.boards][0])
-                        or (self.ReportKeys.maximum
-                            not in report_data[self.ReportKeys.boards][0][self.ReportKeys.sizes][0])
+                        or (self.ReportKeys.sizes not in report_data[self.ReportKeys.boards][0])
+                        or (
+                            self.ReportKeys.maximum
+                            not in report_data[self.ReportKeys.boards][0][self.ReportKeys.sizes][0]
+                        )
                     ):
                         # Sketches reports use an old format, skip
                         print("Old format sketches report found, skipping")
@@ -308,8 +320,10 @@ class ReportSizeDeltas:
                             break
 
         if not sketches_reports:
-            print("No size deltas data found in workflow artifact for this PR. The compile-examples action's "
-                  "enable-size-deltas-report input must be set to true to produce size deltas data.")
+            print(
+                "No size deltas data found in workflow artifact for this PR. The compile-examples action's "
+                "enable-size-deltas-report input must be set to true to produce size deltas data."
+            )
 
         return sketches_reports
 
@@ -345,24 +359,23 @@ class ReportSizeDeltas:
         report_markdown = report_markdown + generate_markdown_table(row_list=summary_report_data) + "\n"
 
         # Add full table
-        report_markdown_with_table = (report_markdown
-                                      + "<details>\n"
-                                        "<summary>Click for full report table</summary>\n\n")
-        report_markdown_with_table = (report_markdown_with_table
-                                      + generate_markdown_table(row_list=full_report_data)
-                                      + "\n</details>\n\n")
+        report_markdown_with_table = (
+            report_markdown + "<details>\n" "<summary>Click for full report table</summary>\n\n"
+        )
+        report_markdown_with_table = (
+            report_markdown_with_table + generate_markdown_table(row_list=full_report_data) + "\n</details>\n\n"
+        )
 
         if len(report_markdown_with_table) < maximum_report_length:
             report_markdown = report_markdown_with_table
 
             # Add full CSV
-            report_markdown_with_csv = (report_markdown
-                                        + "<details>\n"
-                                          "<summary>Click for full report CSV</summary>\n\n"
-                                          "```\n")
-            report_markdown_with_csv = (report_markdown_with_csv
-                                        + generate_csv_table(row_list=full_report_data)
-                                        + "```\n</details>")
+            report_markdown_with_csv = (
+                report_markdown + "<details>\n" "<summary>Click for full report CSV</summary>\n\n" "```\n"
+            )
+            report_markdown_with_csv = (
+                report_markdown_with_csv + generate_csv_table(row_list=full_report_data) + "```\n</details>"
+            )
 
             if len(report_markdown_with_csv) < maximum_report_length:
                 report_markdown = report_markdown_with_csv
@@ -386,51 +399,32 @@ class ReportSizeDeltas:
         # Populate the row with data
         for size_data in fqbn_data[self.ReportKeys.sizes]:
             # Determine column number for this memory type
-            column_number = get_report_column_number(
-                report=report_data,
-                column_heading=size_data[self.ReportKeys.name]
-            )
+            column_number = get_report_column_number(report=report_data, column_heading=size_data[self.ReportKeys.name])
 
             # Add the memory data to the cell
             if self.ReportKeys.delta in size_data:
                 # Absolute data
-                report_data[row_number][column_number] = (
-                    self.get_summary_value(
-                        show_emoji=True,
-                        minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
-                            self.ReportKeys.minimum],
-                        maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][
-                            self.ReportKeys.maximum]
-                    )
+                report_data[row_number][column_number] = self.get_summary_value(
+                    show_emoji=True,
+                    minimum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][self.ReportKeys.minimum],
+                    maximum=size_data[self.ReportKeys.delta][self.ReportKeys.absolute][self.ReportKeys.maximum],
                 )
 
                 # Relative data
-                report_data[row_number][column_number + 1] = (
-                    self.get_summary_value(
-                        show_emoji=False,
-                        minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
-                            self.ReportKeys.minimum],
-                        maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][
-                            self.ReportKeys.maximum]
-                    )
+                report_data[row_number][column_number + 1] = self.get_summary_value(
+                    show_emoji=False,
+                    minimum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][self.ReportKeys.minimum],
+                    maximum=size_data[self.ReportKeys.delta][self.ReportKeys.relative][self.ReportKeys.maximum],
                 )
             else:
                 # Absolute data
-                report_data[row_number][column_number] = (
-                    self.get_summary_value(
-                        show_emoji=True,
-                        minimum=self.not_applicable_indicator,
-                        maximum=self.not_applicable_indicator
-                    )
+                report_data[row_number][column_number] = self.get_summary_value(
+                    show_emoji=True, minimum=self.not_applicable_indicator, maximum=self.not_applicable_indicator
                 )
 
                 # Relative data
-                report_data[row_number][column_number + 1] = (
-                    self.get_summary_value(
-                        show_emoji=False,
-                        minimum=self.not_applicable_indicator,
-                        maximum=self.not_applicable_indicator
-                    )
+                report_data[row_number][column_number + 1] = self.get_summary_value(
+                    show_emoji=False, minimum=self.not_applicable_indicator, maximum=self.not_applicable_indicator
                 )
 
     def add_detailed_report_row(self, report_data, fqbn_data) -> None:
@@ -454,23 +448,20 @@ class ReportSizeDeltas:
                     report=report_data,
                     column_heading=(
                         "`{sketch_name}`<br>{size_name}".format(
-                            sketch_name=sketch[self.ReportKeys.name],
-                            size_name=size_data[self.ReportKeys.name]
+                            sketch_name=sketch[self.ReportKeys.name], size_name=size_data[self.ReportKeys.name]
                         )
-                    )
+                    ),
                 )
 
                 # Add the memory data to the cell
                 if self.ReportKeys.delta in size_data:
                     # Absolute
-                    report_data[row_number][column_number] = (
-                        size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
-                    )
+                    report_data[row_number][column_number] = size_data[self.ReportKeys.delta][self.ReportKeys.absolute]
 
                     # Relative
-                    report_data[row_number][column_number + 1] = (
-                        size_data[self.ReportKeys.delta][self.ReportKeys.relative]
-                    )
+                    report_data[row_number][column_number + 1] = size_data[self.ReportKeys.delta][
+                        self.ReportKeys.relative
+                    ]
                 else:
                     # Absolute
                     report_data[row_number][column_number] = self.not_applicable_indicator
@@ -528,11 +519,7 @@ class ReportSizeDeltas:
         report_data = {"body": report_markdown}
         report_data = json.dumps(obj=report_data)
         report_data = report_data.encode(encoding="utf-8")
-        url = ("https://api.github.com/repos/"
-               + self.repository_name
-               + "/issues/"
-               + str(pr_number)
-               + "/comments")
+        url = "https://api.github.com/repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments"
 
         self.http_request(url=url, data=report_data)
 
@@ -549,8 +536,15 @@ class ReportSizeDeltas:
         page_number -- Some responses will be paginated. This argument specifies which page should be returned.
                        (default value: 1)
         """
-        return self.get_json_response(url="https://api.github.com/" + request + "?" + request_parameters + "&page="
-                                          + str(page_number) + "&per_page=100")
+        return self.get_json_response(
+            url="https://api.github.com/"
+            + request
+            + "?"
+            + request_parameters
+            + "&page="
+            + str(page_number)
+            + "&per_page=100"
+        )
 
     def get_json_response(self, url: str):
         """Load the specified URL and return a dictionary:
@@ -599,9 +593,11 @@ class ReportSizeDeltas:
                 (default value: None)
         """
         with self.raw_http_request(url=url, data=data) as response_object:
-            return {"body": response_object.read().decode(encoding="utf-8", errors="ignore"),
-                    "headers": response_object.info(),
-                    "url": response_object.geturl()}
+            return {
+                "body": response_object.read().decode(encoding="utf-8", errors="ignore"),
+                "headers": response_object.info(),
+                "url": response_object.geturl(),
+            }
 
     def raw_http_request(self, url: str, data: str | None = None):
         """Make a request and return an object containing the response.
@@ -681,7 +677,7 @@ def determine_urlopen_retry(exception) -> bool:
         # urllib.error.URLError: <urlopen error [WinError 10061] No connection could be made because the target
         # machine actively refused it>
         "<urlopen error [WinError 10061] No connection could be made because the target machine actively refused "
-        "it>"
+        "it>",
     ]
 
     # Delay before retry (seconds)
@@ -713,7 +709,7 @@ def get_page_count(link_header: str | None) -> int:
     if link_header is not None:
         # Get the pagination data
         for link in link_header.split(","):
-            if link[-13:] == ">; rel=\"last\"":
+            if link[-13:] == '>; rel="last"':
                 link = re.split("[?&>]", link)
                 for parameter in link:
                     if parameter[:5] == "page=":

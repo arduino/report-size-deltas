@@ -18,9 +18,9 @@ test_data_path = pathlib.Path(__file__).resolve().parent.joinpath("data")
 report_keys = reportsizedeltas.ReportSizeDeltas.ReportKeys()
 
 
-def get_reportsizedeltas_object(repository_name="FooOwner/BarRepository",
-                                sketches_reports_source="foo-artifact-name",
-                                token="foo token"):
+def get_reportsizedeltas_object(
+    repository_name="FooOwner/BarRepository", sketches_reports_source="foo-artifact-name", token="foo token"
+):
     """Return a reportsizedeltas.ReportSizeDeltas object to use in tests.
 
     Keyword arguments:
@@ -28,8 +28,9 @@ def get_reportsizedeltas_object(repository_name="FooOwner/BarRepository",
     sketches_reports_source -- name of the workflow artifact that contains the memory usage data
     token -- GitHub access token
     """
-    return reportsizedeltas.ReportSizeDeltas(repository_name=repository_name,
-                                             sketches_reports_source=sketches_reports_source, token=token)
+    return reportsizedeltas.ReportSizeDeltas(
+        repository_name=repository_name, sketches_reports_source=sketches_reports_source, token=token
+    )
 
 
 def directories_are_same(left_directory, right_directory):
@@ -50,16 +51,16 @@ def directories_are_same(left_directory, right_directory):
         return False
 
     filecmp.clear_cache()
-    (_, mismatch, errors) = filecmp.cmpfiles(a=left_directory,
-                                             b=right_directory,
-                                             common=directory_comparison.common_files,
-                                             shallow=False)
+    (_, mismatch, errors) = filecmp.cmpfiles(
+        a=left_directory, b=right_directory, common=directory_comparison.common_files, shallow=False
+    )
     if len(mismatch) > 0 or len(errors) > 0:
         return False
 
     for common_dir in directory_comparison.common_dirs:
-        if not directories_are_same(left_directory=left_directory.joinpath(common_dir),
-                                    right_directory=right_directory.joinpath(common_dir)):
+        if not directories_are_same(
+            left_directory=left_directory.joinpath(common_dir), right_directory=right_directory.joinpath(common_dir)
+        ):
             return False
 
     return True
@@ -98,6 +99,7 @@ def setup_environment_variables(monkeypatch):
 
     class ActionInputs:
         """A container for the values of the environment variables"""
+
         repository_name = "GoldenOwner/GoldenRepository"
         sketches_reports_source = "golden-source-name"
         token = "golden-github-token"
@@ -126,16 +128,15 @@ def test_main(monkeypatch, mocker, setup_environment_variables):
     reportsizedeltas.ReportSizeDeltas.assert_called_once_with(
         repository_name=setup_environment_variables.repository_name,
         sketches_reports_source=setup_environment_variables.sketches_reports_source,
-        token=setup_environment_variables.token
+        token=setup_environment_variables.token,
     )
     ReportSizeDeltas.report_size_deltas.assert_called_once()
 
 
 @pytest.mark.parametrize("use_size_deltas_report_artifact_name", [True, False])
-def test_main_size_deltas_report_artifact_name_deprecation_warning(capsys,
-                                                                   mocker,
-                                                                   monkeypatch, setup_environment_variables,
-                                                                   use_size_deltas_report_artifact_name):
+def test_main_size_deltas_report_artifact_name_deprecation_warning(
+    capsys, mocker, monkeypatch, setup_environment_variables, use_size_deltas_report_artifact_name
+):
     size_deltas_report_artifact_name = "golden-size-deltas-report-artifact-name-value"
 
     if use_size_deltas_report_artifact_name:
@@ -162,7 +163,7 @@ def test_main_size_deltas_report_artifact_name_deprecation_warning(capsys,
         expected_output = (
             expected_output
             + "::warning::The size-deltas-report-artifact-name input is deprecated. Use the equivalent input: "
-              "sketches-reports-source instead."
+            "sketches-reports-source instead."
         )
 
     assert capsys.readouterr().out.strip() == expected_output
@@ -207,8 +208,9 @@ def test_report_size_deltas_from_local_reports(mocker, monkeypatch):
     report = "golden report"
 
     monkeypatch.setenv("GITHUB_WORKSPACE", github_workspace)
-    monkeypatch.setenv("GITHUB_EVENT_PATH",
-                       str(test_data_path.joinpath("test_report_size_deltas_pull_request", "githubevent.json")))
+    monkeypatch.setenv(
+        "GITHUB_EVENT_PATH", str(test_data_path.joinpath("test_report_size_deltas_pull_request", "githubevent.json"))
+    )
 
     mocker.patch("reportsizedeltas.ReportSizeDeltas.get_sketches_reports", autospec=True)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.generate_report", autospec=True, return_value=report)
@@ -227,8 +229,9 @@ def test_report_size_deltas_from_local_reports(mocker, monkeypatch):
     reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = sketches_reports
     report_size_deltas.report_size_deltas_from_local_reports()
 
-    report_size_deltas.get_sketches_reports.assert_called_once_with(report_size_deltas,
-                                                                    artifact_folder_object=sketches_reports_folder)
+    report_size_deltas.get_sketches_reports.assert_called_once_with(
+        report_size_deltas, artifact_folder_object=sketches_reports_folder
+    )
     report_size_deltas.generate_report.assert_called_once_with(report_size_deltas, sketches_reports=sketches_reports)
     report_size_deltas.comment_report.assert_called_once_with(report_size_deltas, pr_number=42, report_markdown=report)
 
@@ -239,20 +242,24 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     pr_head_sha = "pr-head-sha"
     sketches_reports = [{reportsizedeltas.ReportSizeDeltas.ReportKeys.commit_hash: pr_head_sha}]
     report = "foo report"
-    json_data = [{"number": 1, "locked": True, "head": {"sha": pr_head_sha, "ref": "asdf"}, "user": {"login": "1234"}},
-                 {"number": 2, "locked": False, "head": {"sha": pr_head_sha, "ref": "asdf"}, "user": {"login": "1234"}}]
+    json_data = [
+        {"number": 1, "locked": True, "head": {"sha": pr_head_sha, "ref": "asdf"}, "user": {"login": "1234"}},
+        {"number": 2, "locked": False, "head": {"sha": pr_head_sha, "ref": "asdf"}, "user": {"login": "1234"}},
+    ]
 
     report_size_deltas = get_reportsizedeltas_object()
 
-    mocker.patch("reportsizedeltas.ReportSizeDeltas.api_request",
-                 autospec=True,
-                 return_value={"json_data": json_data,
-                               "additional_pages": True,
-                               "page_count": 1})
+    mocker.patch(
+        "reportsizedeltas.ReportSizeDeltas.api_request",
+        autospec=True,
+        return_value={"json_data": json_data, "additional_pages": True, "page_count": 1},
+    )
     mocker.patch("reportsizedeltas.ReportSizeDeltas.report_exists", autospec=True, return_value=False)
-    mocker.patch("reportsizedeltas.ReportSizeDeltas.get_artifact_download_url_for_sha",
-                 autospec=True,
-                 return_value=artifact_download_url)
+    mocker.patch(
+        "reportsizedeltas.ReportSizeDeltas.get_artifact_download_url_for_sha",
+        autospec=True,
+        return_value=artifact_download_url,
+    )
     mocker.patch("reportsizedeltas.ReportSizeDeltas.get_artifact", autospec=True, return_value=artifact_folder_object)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.get_sketches_reports", autospec=True, return_value=sketches_reports)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.generate_report", autospec=True, return_value=report)
@@ -321,18 +328,17 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
             unittest.mock.call(report_size_deltas, pr_number=pr_data["number"], pr_head_sha=json_data[0]["head"]["sha"])
         )
         get_artifact_download_url_for_sha_calls.append(
-            unittest.mock.call(report_size_deltas,
-                               pr_user_login=pr_data["user"]["login"],
-                               pr_head_ref=pr_data["head"]["ref"],
-                               pr_head_sha=pr_data["head"]["sha"])
+            unittest.mock.call(
+                report_size_deltas,
+                pr_user_login=pr_data["user"]["login"],
+                pr_head_ref=pr_data["head"]["ref"],
+                pr_head_sha=pr_data["head"]["sha"],
+            )
         )
         get_sketches_reports_calls.append(
             unittest.mock.call(report_size_deltas, artifact_folder_object=artifact_folder_object)
         )
-        generate_report_calls.append(
-            unittest.mock.call(report_size_deltas,
-                               sketches_reports=sketches_reports)
-        )
+        generate_report_calls.append(unittest.mock.call(report_size_deltas, sketches_reports=sketches_reports))
         comment_report_calls.append(
             unittest.mock.call(report_size_deltas, pr_number=pr_data["number"], report_markdown=report)
         )
@@ -352,15 +358,15 @@ def test_report_exists():
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
 
     json_data = [{"body": "foo123"}, {"body": report_size_deltas.report_key_beginning + pr_head_sha + "foo"}]
-    report_size_deltas.api_request = unittest.mock.MagicMock(return_value={"json_data": json_data,
-                                                                           "additional_pages": False,
-                                                                           "page_count": 1})
+    report_size_deltas.api_request = unittest.mock.MagicMock(
+        return_value={"json_data": json_data, "additional_pages": False, "page_count": 1}
+    )
 
     assert report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha=pr_head_sha)
 
-    report_size_deltas.api_request.assert_called_once_with(request="repos/" + repository_name + "/issues/"
-                                                                   + str(pr_number) + "/comments",
-                                                           page_number=1)
+    report_size_deltas.api_request.assert_called_once_with(
+        request="repos/" + repository_name + "/issues/" + str(pr_number) + "/comments", page_number=1
+    )
 
     assert not report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf")
 
@@ -376,36 +382,44 @@ def test_get_artifact_download_url_for_sha():
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
 
     json_data = {"workflow_runs": [{"head_sha": "foo123", "id": "1234"}, {"head_sha": pr_head_sha, "id": run_id}]}
-    report_size_deltas.api_request = unittest.mock.MagicMock(return_value={"json_data": json_data,
-                                                                           "additional_pages": True,
-                                                                           "page_count": 3})
+    report_size_deltas.api_request = unittest.mock.MagicMock(
+        return_value={"json_data": json_data, "additional_pages": True, "page_count": 3}
+    )
     report_size_deltas.get_artifact_download_url_for_run = unittest.mock.MagicMock(return_value=None)
 
     # No SHA match
-    assert report_size_deltas.get_artifact_download_url_for_sha(pr_user_login=pr_user_login,
-                                                                pr_head_ref=pr_head_ref,
-                                                                pr_head_sha="foosha") is None
+    assert (
+        report_size_deltas.get_artifact_download_url_for_sha(
+            pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha="foosha"
+        )
+        is None
+    )
 
     # Test pagination
     request = "repos/" + repository_name + "/actions/runs"
-    request_parameters = ("actor=" + pr_user_login + "&branch=" + pr_head_ref + "&event=pull_request&status=completed")
-    calls = [unittest.mock.call(request=request, request_parameters=request_parameters, page_number=1),
-             unittest.mock.call(request=request, request_parameters=request_parameters, page_number=2),
-             unittest.mock.call(request=request, request_parameters=request_parameters, page_number=3)]
+    request_parameters = "actor=" + pr_user_login + "&branch=" + pr_head_ref + "&event=pull_request&status=completed"
+    calls = [
+        unittest.mock.call(request=request, request_parameters=request_parameters, page_number=1),
+        unittest.mock.call(request=request, request_parameters=request_parameters, page_number=2),
+        unittest.mock.call(request=request, request_parameters=request_parameters, page_number=3),
+    ]
     report_size_deltas.api_request.assert_has_calls(calls)
 
     # SHA match, but no artifact for run
-    assert report_size_deltas.get_artifact_download_url_for_sha(pr_user_login=pr_user_login,
-                                                                pr_head_ref=pr_head_ref,
-                                                                pr_head_sha=pr_head_sha) is None
+    assert (
+        report_size_deltas.get_artifact_download_url_for_sha(
+            pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha=pr_head_sha
+        )
+        is None
+    )
 
     report_size_deltas.get_artifact_download_url_for_run = unittest.mock.MagicMock(return_value=test_artifact_url)
 
     # SHA match, artifact match
     assert test_artifact_url == (
-        report_size_deltas.get_artifact_download_url_for_sha(pr_user_login=pr_user_login,
-                                                             pr_head_ref=pr_head_ref,
-                                                             pr_head_sha=pr_head_sha)
+        report_size_deltas.get_artifact_download_url_for_sha(
+            pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha=pr_head_sha
+        )
     )
 
     report_size_deltas.get_artifact_download_url_for_run.assert_called_once_with(run_id=run_id)
@@ -419,26 +433,19 @@ def test_get_artifact_download_url_for_run(expired, artifact_name):
     archive_download_url = "archive_download_url"
     run_id = "1234"
 
-    report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name,
-                                                     sketches_reports_source=sketches_reports_source)
+    report_size_deltas = get_reportsizedeltas_object(
+        repository_name=repository_name, sketches_reports_source=sketches_reports_source
+    )
 
     json_data = {
         "artifacts": [
-            {
-                "name": artifact_name,
-                "archive_download_url": archive_download_url,
-                "expired": expired
-            },
-            {
-                "name": "bar123",
-                "archive_download_url": "wrong_artifact_url",
-                "expired": False
-            }
+            {"name": artifact_name, "archive_download_url": archive_download_url, "expired": expired},
+            {"name": "bar123", "archive_download_url": "wrong_artifact_url", "expired": False},
         ]
     }
-    report_size_deltas.api_request = unittest.mock.MagicMock(return_value={"json_data": json_data,
-                                                                           "additional_pages": False,
-                                                                           "page_count": 1})
+    report_size_deltas.api_request = unittest.mock.MagicMock(
+        return_value={"json_data": json_data, "additional_pages": False, "page_count": 1}
+    )
 
     download_url = report_size_deltas.get_artifact_download_url_for_run(run_id=run_id)
     if not expired and artifact_name == sketches_reports_source:
@@ -447,14 +454,13 @@ def test_get_artifact_download_url_for_run(expired, artifact_name):
         assert download_url is None
 
     report_size_deltas.api_request.assert_called_once_with(
-        request="repos/" + repository_name + "/actions/runs/" + str(run_id)
-                + "/artifacts",
-        page_number=1)
+        request="repos/" + repository_name + "/actions/runs/" + str(run_id) + "/artifacts", page_number=1
+    )
 
 
-@pytest.mark.parametrize("test_artifact_name, expected_success",
-                         [("correct-artifact-name", True),
-                          ("incorrect-artifact-name", False)])
+@pytest.mark.parametrize(
+    "test_artifact_name, expected_success", [("correct-artifact-name", True), ("incorrect-artifact-name", False)]
+)
 def test_get_artifact(tmp_path, test_artifact_name, expected_success):
     artifact_source_path = test_data_path.joinpath("size-deltas-reports-new")
 
@@ -478,8 +484,7 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
 
         with artifact_folder_object as artifact_folder:
             # Verify that the artifact matches the source
-            assert directories_are_same(left_directory=artifact_source_path,
-                                        right_directory=artifact_folder)
+            assert directories_are_same(left_directory=artifact_source_path, right_directory=artifact_folder)
     else:
         with pytest.raises(expected_exception=urllib.error.URLError):
             report_size_deltas.get_artifact(artifact_download_url=artifact_download_url)
@@ -488,9 +493,7 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
 @pytest.mark.parametrize(
     "sketches_reports_path, expected_sketches_reports",
     [
-        (test_data_path.joinpath("size-deltas-reports-old"),
-         []
-         ),
+        (test_data_path.joinpath("size-deltas-reports-old"), []),
         (
             test_data_path.joinpath("size-deltas-reports-new"),
             [
@@ -503,32 +506,20 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                             report_keys.sizes: [
                                 {
                                     report_keys.delta: {
-                                        report_keys.absolute: {
-                                            report_keys.maximum: -12,
-                                            report_keys.minimum: -12
-                                        },
-                                        report_keys.relative: {
-                                            report_keys.maximum: -0.05,
-                                            report_keys.minimum: -0.05
-                                        }
+                                        report_keys.absolute: {report_keys.maximum: -12, report_keys.minimum: -12},
+                                        report_keys.relative: {report_keys.maximum: -0.05, report_keys.minimum: -0.05},
                                     },
                                     report_keys.name: "flash",
-                                    report_keys.maximum: 28672
+                                    report_keys.maximum: 28672,
                                 },
                                 {
                                     report_keys.delta: {
-                                        report_keys.absolute: {
-                                            report_keys.maximum: 0,
-                                            report_keys.minimum: 0
-                                        },
-                                        report_keys.relative: {
-                                            report_keys.maximum: 0.00,
-                                            report_keys.minimum: 0.00
-                                        }
+                                        report_keys.absolute: {report_keys.maximum: 0, report_keys.minimum: 0},
+                                        report_keys.relative: {report_keys.maximum: 0.00, report_keys.minimum: 0.00},
                                     },
                                     report_keys.name: "RAM for global variables",
-                                    report_keys.maximum: 2560
-                                }
+                                    report_keys.maximum: 2560,
+                                },
                             ],
                             report_keys.sketches: [
                                 {
@@ -538,36 +529,36 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 3494,
-                                                report_keys.relative: 12.19
+                                                report_keys.relative: 12.19,
                                             },
                                             report_keys.delta: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "flash",
                                             report_keys.maximum: 28672,
                                             report_keys.previous: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
-                                            }
+                                                report_keys.relative: "N/A",
+                                            },
                                         },
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 153,
-                                                report_keys.relative: 5.97
+                                                report_keys.relative: 5.97,
                                             },
                                             report_keys.delta: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "RAM for global variables",
                                             report_keys.maximum: 2560,
                                             report_keys.previous: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
-                                            }
-                                        }
-                                    ]
+                                                report_keys.relative: "N/A",
+                                            },
+                                        },
+                                    ],
                                 },
                                 {
                                     report_keys.compilation_success: True,
@@ -576,40 +567,34 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 3462,
-                                                report_keys.relative: 12.07
+                                                report_keys.relative: 12.07,
                                             },
-                                            report_keys.delta: {
-                                                report_keys.absolute: -12,
-                                                report_keys.relative: -0.05
-                                            },
+                                            report_keys.delta: {report_keys.absolute: -12, report_keys.relative: -0.05},
                                             report_keys.name: "flash",
                                             report_keys.maximum: 28672,
                                             report_keys.previous: {
                                                 report_keys.absolute: 3474,
-                                                report_keys.relative: 12.12
-                                            }
+                                                report_keys.relative: 12.12,
+                                            },
                                         },
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 149,
-                                                report_keys.relative: 5.82
+                                                report_keys.relative: 5.82,
                                             },
-                                            report_keys.delta: {
-                                                report_keys.absolute: 0,
-                                                report_keys.relative: -0.00
-                                            },
+                                            report_keys.delta: {report_keys.absolute: 0, report_keys.relative: -0.00},
                                             report_keys.name: "RAM for global variables",
                                             report_keys.maximum: 2560,
                                             report_keys.previous: {
                                                 report_keys.absolute: 149,
-                                                report_keys.relative: 5.82
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
+                                                report_keys.relative: 5.82,
+                                            },
+                                        },
+                                    ],
+                                },
+                            ],
                         }
-                    ]
+                    ],
                 },
                 {
                     report_keys.commit_hash: "d8fd302",
@@ -620,32 +605,20 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                             report_keys.sizes: [
                                 {
                                     report_keys.delta: {
-                                        report_keys.absolute: {
-                                            report_keys.maximum: -994,
-                                            report_keys.minimum: -994
-                                        },
-                                        report_keys.relative: {
-                                            report_keys.maximum: -3.08,
-                                            report_keys.minimum: -3.08
-                                        }
+                                        report_keys.absolute: {report_keys.maximum: -994, report_keys.minimum: -994},
+                                        report_keys.relative: {report_keys.maximum: -3.08, report_keys.minimum: -3.08},
                                     },
                                     report_keys.name: "flash",
                                     report_keys.maximum: 32256,
                                 },
                                 {
                                     report_keys.delta: {
-                                        report_keys.absolute: {
-                                            report_keys.maximum: -175,
-                                            report_keys.minimum: -175
-                                        },
-                                        report_keys.relative: {
-                                            report_keys.maximum: -8.54,
-                                            report_keys.minimum: -8.54
-                                        }
+                                        report_keys.absolute: {report_keys.maximum: -175, report_keys.minimum: -175},
+                                        report_keys.relative: {report_keys.maximum: -8.54, report_keys.minimum: -8.54},
                                     },
                                     report_keys.name: "RAM for global variables",
                                     report_keys.maximum: 2048,
-                                }
+                                },
                             ],
                             report_keys.sketches: [
                                 {
@@ -655,36 +628,36 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 1460,
-                                                report_keys.relative: 4.53
+                                                report_keys.relative: 4.53,
                                             },
                                             report_keys.delta: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "flash",
                                             report_keys.maximum: 32256,
                                             report_keys.previous: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
-                                            }
+                                                report_keys.relative: "N/A",
+                                            },
                                         },
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 190,
-                                                report_keys.relative: 9.28
+                                                report_keys.relative: 9.28,
                                             },
                                             report_keys.delta: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "RAM for global variables",
                                             report_keys.maximum: 2048,
                                             report_keys.previous: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
-                                            }
-                                        }
-                                    ]
+                                                report_keys.relative: "N/A",
+                                            },
+                                        },
+                                    ],
                                 },
                                 {
                                     report_keys.compilation_success: True,
@@ -693,40 +666,37 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: 444,
-                                                report_keys.relative: 1.38
+                                                report_keys.relative: 1.38,
                                             },
                                             report_keys.delta: {
                                                 report_keys.absolute: -994,
-                                                report_keys.relative: -3.08
+                                                report_keys.relative: -3.08,
                                             },
                                             report_keys.name: "flash",
                                             report_keys.maximum: 32256,
                                             report_keys.previous: {
                                                 report_keys.absolute: 1438,
-                                                report_keys.relative: 4.46
-                                            }
+                                                report_keys.relative: 4.46,
+                                            },
                                         },
                                         {
-                                            report_keys.current: {
-                                                report_keys.absolute: 9,
-                                                report_keys.relative: 0.44
-                                            },
+                                            report_keys.current: {report_keys.absolute: 9, report_keys.relative: 0.44},
                                             report_keys.delta: {
                                                 report_keys.absolute: -175,
-                                                report_keys.relative: -8.54
+                                                report_keys.relative: -8.54,
                                             },
                                             report_keys.name: "RAM for global variables",
                                             report_keys.maximum: 2048,
                                             report_keys.previous: {
                                                 report_keys.absolute: 184,
-                                                report_keys.relative: 8.98
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
+                                                report_keys.relative: 8.98,
+                                            },
+                                        },
+                                    ],
+                                },
+                            ],
                         }
-                    ]
+                    ],
                 },
                 {
                     report_keys.commit_hash: "54815a7d1a30fcb0d77d98242b158e7845c0516d",
@@ -742,7 +712,7 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                 {
                                     report_keys.name: "RAM for global variables",
                                     report_keys.maximum: "N/A",
-                                }
+                                },
                             ],
                             report_keys.sketches: [
                                 {
@@ -752,7 +722,7 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "flash",
                                             report_keys.maximum: "N/A",
@@ -760,12 +730,12 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "RAM for global variables",
                                             report_keys.maximum: "N/A",
-                                        }
-                                    ]
+                                        },
+                                    ],
                                 },
                                 {
                                     report_keys.compilation_success: True,
@@ -774,7 +744,7 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "flash",
                                             report_keys.maximum: "N/A",
@@ -782,28 +752,27 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
                                         {
                                             report_keys.current: {
                                                 report_keys.absolute: "N/A",
-                                                report_keys.relative: "N/A"
+                                                report_keys.relative: "N/A",
                                             },
                                             report_keys.name: "RAM for global variables",
                                             report_keys.maximum: "N/A",
-                                        }
-                                    ]
+                                        },
+                                    ],
                                 },
-                            ]
+                            ],
                         }
-                    ]
+                    ],
                 },
-            ]
-        )
-    ]
+            ],
+        ),
+    ],
 )
 def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
     report_size_deltas = get_reportsizedeltas_object()
 
     artifact_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(src=str(sketches_reports_path),
-                                     dst=artifact_folder_object.name)
+        distutils.dir_util.copy_tree(src=str(sketches_reports_path), dst=artifact_folder_object.name)
     except Exception:  # pragma: no cover
         artifact_folder_object.cleanup()
         raise
@@ -822,33 +791,21 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
                 report_keys.sizes: [
                     {
                         report_keys.delta: {
-                            report_keys.absolute: {
-                                report_keys.maximum: -994,
-                                report_keys.minimum: -994
-                            },
-                            report_keys.relative: {
-                                report_keys.maximum: -3.08,
-                                report_keys.minimum: -3.08
-                            }
+                            report_keys.absolute: {report_keys.maximum: -994, report_keys.minimum: -994},
+                            report_keys.relative: {report_keys.maximum: -3.08, report_keys.minimum: -3.08},
                         },
                         report_keys.name: "flash",
                         report_keys.maximum: 32256,
                     },
                     {
                         report_keys.delta: {
-                            report_keys.absolute: {
-                                report_keys.maximum: -175,
-                                report_keys.minimum: -175
-                            },
-                            report_keys.relative: {
-                                report_keys.maximum: -8.54,
-                                report_keys.minimum: -8.54
-                            }
+                            report_keys.absolute: {report_keys.maximum: -175, report_keys.minimum: -175},
+                            report_keys.relative: {report_keys.maximum: -8.54, report_keys.minimum: -8.54},
                         },
                         report_keys.name: "RAM for global variables",
                         report_keys.maximum: 2048,
-                    }
-                ]
+                    },
+                ],
             },
             [
                 ["Board", "flash", "%", "RAM for global variables", "%"],
@@ -857,9 +814,9 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
                     ":green_heart: -994 - -994",
                     "-3.08 - -3.08",
                     ":green_heart: -175 - -175",
-                    "-8.54 - -8.54"
-                ]
-            ]
+                    "-8.54 - -8.54",
+                ],
+            ],
         ),
         (
             [
@@ -869,8 +826,8 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
                     ":green_heart: -994 - -994",
                     "-3.08 - -3.08",
                     ":green_heart: -175 - -175",
-                    "-8.54 - -8.54"
-                ]
+                    "-8.54 - -8.54",
+                ],
             ],
             {
                 report_keys.board: "arduino:mbed_portenta:envie_m7",
@@ -882,8 +839,8 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
                     {
                         report_keys.name: "RAM for global variables",
                         report_keys.maximum: "N/A",
-                    }
-                ]
+                    },
+                ],
             },
             [
                 ["Board", "flash", "%", "RAM for global variables", "%"],
@@ -892,12 +849,12 @@ def test_get_sketches_reports(sketches_reports_path, expected_sketches_reports):
                     ":green_heart: -994 - -994",
                     "-3.08 - -3.08",
                     ":green_heart: -175 - -175",
-                    "-8.54 - -8.54"
+                    "-8.54 - -8.54",
                 ],
-                ["`arduino:mbed_portenta:envie_m7`", "N/A", "N/A", "N/A", "N/A"]
-            ]
-        )
-    ]
+                ["`arduino:mbed_portenta:envie_m7`", "N/A", "N/A", "N/A", "N/A"],
+            ],
+        ),
+    ],
 )
 def test_add_summary_report_row(report_data, fqbn_data, expected_report_data):
     report_size_deltas = get_reportsizedeltas_object()
@@ -919,50 +876,32 @@ def test_add_summary_report_row(report_data, fqbn_data, expected_report_data):
                         report_keys.name: "examples/Foo",
                         report_keys.sizes: [
                             {
-                                report_keys.current: {
-                                    report_keys.absolute: 3462,
-                                    report_keys.relative: 12.07
-                                },
-                                report_keys.delta: {
-                                    report_keys.absolute: -12,
-                                    report_keys.relative: -0.05
-                                },
+                                report_keys.current: {report_keys.absolute: 3462, report_keys.relative: 12.07},
+                                report_keys.delta: {report_keys.absolute: -12, report_keys.relative: -0.05},
                                 report_keys.name: "flash",
                                 report_keys.maximum: 28672,
-                                report_keys.previous: {
-                                    report_keys.absolute: 3474,
-                                    report_keys.relative: 12.12
-                                }
+                                report_keys.previous: {report_keys.absolute: 3474, report_keys.relative: 12.12},
                             },
                             {
-                                report_keys.current: {
-                                    report_keys.absolute: 149,
-                                    report_keys.relative: 5.82
-                                },
-                                report_keys.delta: {
-                                    report_keys.absolute: 0,
-                                    report_keys.relative: -0.00
-                                },
+                                report_keys.current: {report_keys.absolute: 149, report_keys.relative: 5.82},
+                                report_keys.delta: {report_keys.absolute: 0, report_keys.relative: -0.00},
                                 report_keys.name: "RAM for global variables",
                                 report_keys.maximum: 2560,
-                                report_keys.previous: {
-                                    report_keys.absolute: 149,
-                                    report_keys.relative: 5.82
-                                }
-                            }
-                        ]
+                                report_keys.previous: {report_keys.absolute: 149, report_keys.relative: 5.82},
+                            },
+                        ],
                     }
-                ]
+                ],
             },
             [
                 ["Board", "`examples/Foo`<br>flash", "%", "`examples/Foo`<br>RAM for global variables", "%"],
-                ["`arduino:avr:leonardo`", -12, -0.05, 0, -0.0]
-            ]
+                ["`arduino:avr:leonardo`", -12, -0.05, 0, -0.0],
+            ],
         ),
         (
             [
                 ["Board", "`examples/Foo`<br>flash", "%", "`examples/Foo`<br>RAM for global variables", "%"],
-                ["`arduino:avr:leonardo`", -12, -0.05, 0, -0.0]
+                ["`arduino:avr:leonardo`", -12, -0.05, 0, -0.0],
             ],
             {
                 report_keys.board: "arduino:mbed_portenta:envie_m7",
@@ -972,32 +911,26 @@ def test_add_summary_report_row(report_data, fqbn_data, expected_report_data):
                         report_keys.name: "examples/Foo",
                         report_keys.sizes: [
                             {
-                                report_keys.current: {
-                                    report_keys.absolute: "N/A",
-                                    report_keys.relative: "N/A"
-                                },
+                                report_keys.current: {report_keys.absolute: "N/A", report_keys.relative: "N/A"},
                                 report_keys.name: "flash",
                                 report_keys.maximum: "N/A",
                             },
                             {
-                                report_keys.current: {
-                                    report_keys.absolute: "N/A",
-                                    report_keys.relative: "N/A"
-                                },
+                                report_keys.current: {report_keys.absolute: "N/A", report_keys.relative: "N/A"},
                                 report_keys.name: "RAM for global variables",
                                 report_keys.maximum: "N/A",
-                            }
-                        ]
+                            },
+                        ],
                     }
-                ]
+                ],
             },
             [
                 ["Board", "`examples/Foo`<br>flash", "%", "`examples/Foo`<br>RAM for global variables", "%"],
                 ["`arduino:avr:leonardo`", -12, -0.05, 0, -0.0],
-                ["`arduino:mbed_portenta:envie_m7`", "N/A", "N/A", "N/A", "N/A"]
-            ]
-        )
-    ]
+                ["`arduino:mbed_portenta:envie_m7`", "N/A", "N/A", "N/A", "N/A"],
+            ],
+        ),
+    ],
 )
 def test_add_detailed_report_row(report_data, fqbn_data, expected_report_data):
     report_size_deltas = get_reportsizedeltas_object()
@@ -1040,8 +973,7 @@ def test_generate_report():
 
     artifact_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(src=str(sketches_report_path),
-                                     dst=artifact_folder_object.name)
+        distutils.dir_util.copy_tree(src=str(sketches_report_path), dst=artifact_folder_object.name)
     except Exception:  # pragma: no cover
         artifact_folder_object.cleanup()
         raise
@@ -1051,22 +983,24 @@ def test_generate_report():
     assert report == expected_deltas_report
 
 
-@pytest.mark.parametrize("show_emoji, minimum, maximum, expected_value",
-                         [(True, "N/A", "N/A", "N/A"),
-                          (True, -1, 0, ":green_heart: -1 - 0"),
-                          (False, -1, 0, "-1 - 0"),
-                          (True, 0, 0, "0 - 0"),
-                          (True, 0, 1, ":small_red_triangle: 0 - +1"),
-                          (True, 1, 1, ":small_red_triangle: +1 - +1"),
-                          (True, -1, 1, ":grey_question: -1 - +1")])
+@pytest.mark.parametrize(
+    "show_emoji, minimum, maximum, expected_value",
+    [
+        (True, "N/A", "N/A", "N/A"),
+        (True, -1, 0, ":green_heart: -1 - 0"),
+        (False, -1, 0, "-1 - 0"),
+        (True, 0, 0, "0 - 0"),
+        (True, 0, 1, ":small_red_triangle: 0 - +1"),
+        (True, 1, 1, ":small_red_triangle: +1 - +1"),
+        (True, -1, 1, ":grey_question: -1 - +1"),
+    ],
+)
 def test_get_summary_value(show_emoji, minimum, maximum, expected_value):
     report_size_deltas = get_reportsizedeltas_object()
 
-    assert report_size_deltas.get_summary_value(
-        show_emoji=show_emoji,
-        minimum=minimum,
-        maximum=maximum
-    ) == expected_value
+    assert (
+        report_size_deltas.get_summary_value(show_emoji=show_emoji, minimum=minimum, maximum=maximum) == expected_value
+    )
 
 
 def test_comment_report():
@@ -1085,15 +1019,13 @@ def test_comment_report():
     report_data = report_data.encode(encoding="utf-8")
 
     report_size_deltas.http_request.assert_called_once_with(
-        url="https://api.github.com/repos/" + repository_name + "/issues/"
-            + str(pr_number) + "/comments",
-        data=report_data)
+        url="https://api.github.com/repos/" + repository_name + "/issues/" + str(pr_number) + "/comments",
+        data=report_data,
+    )
 
 
 def test_api_request():
-    response_data = {"json_data": {"foo": "bar"},
-                     "additional_pages": False,
-                     "page_count": 1}
+    response_data = {"json_data": {"foo": "bar"}, "additional_pages": False, "page_count": 1}
     request = "test_request"
     request_parameters = "test_parameters"
     page_number = 1
@@ -1102,12 +1034,18 @@ def test_api_request():
 
     report_size_deltas.get_json_response = unittest.mock.MagicMock(return_value=response_data)
 
-    assert response_data == report_size_deltas.api_request(request=request,
-                                                           request_parameters=request_parameters,
-                                                           page_number=page_number)
+    assert response_data == report_size_deltas.api_request(
+        request=request, request_parameters=request_parameters, page_number=page_number
+    )
     report_size_deltas.get_json_response.assert_called_once_with(
-        url="https://api.github.com/" + request + "?" + request_parameters
-            + "&page=" + str(page_number) + "&per_page=100")
+        url="https://api.github.com/"
+        + request
+        + "?"
+        + request_parameters
+        + "&page="
+        + str(page_number)
+        + "&per_page=100"
+    )
 
 
 def test_get_json_response():
@@ -1141,9 +1079,13 @@ def test_get_json_response():
     assert not response_data["additional_pages"]
     assert 1 == response_data["page_count"]
 
-    response = {"headers": {"Link": '<https://api.github.com/repositories/919161/pulls?page=2>; rel="next", '
-                                    '"<https://api.github.com/repositories/919161/pulls?page=4>; rel="last"'},
-                "body": "[42]"}
+    response = {
+        "headers": {
+            "Link": '<https://api.github.com/repositories/919161/pulls?page=2>; rel="next", '
+            '"<https://api.github.com/repositories/919161/pulls?page=4>; rel="last"'
+        },
+        "body": "[42]",
+    }
     report_size_deltas.http_request = unittest.mock.MagicMock(return_value=response)
 
     # Non-empty body, Link field is populated
@@ -1180,8 +1122,7 @@ def test_raw_http_request(mocker):
     request = "test_request"
     urlopen_return = unittest.mock.sentinel.urlopen_return
 
-    report_size_deltas = get_reportsizedeltas_object(repository_name=user_name + "/FooRepositoryName",
-                                                     token=token)
+    report_size_deltas = get_reportsizedeltas_object(repository_name=user_name + "/FooRepositoryName", token=token)
 
     mocker.patch.object(urllib.request, "Request", autospec=True, return_value=request)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.handle_rate_limiting", autospec=True)
@@ -1189,10 +1130,9 @@ def test_raw_http_request(mocker):
 
     report_size_deltas.raw_http_request(url=url, data=data)
 
-    urllib.request.Request.assert_called_once_with(url=url,
-                                                   headers={"Authorization": "token " + token,
-                                                            "User-Agent": user_name},
-                                                   data=data)
+    urllib.request.Request.assert_called_once_with(
+        url=url, headers={"Authorization": "token " + token, "User-Agent": user_name}, data=data
+    )
     # URL is subject to GitHub API rate limiting
     report_size_deltas.handle_rate_limiting.assert_called_once()
 
@@ -1234,44 +1174,56 @@ def test_determine_urlopen_retry_true(mocker):
     mocker.patch("time.sleep", autospec=True)
 
     assert reportsizedeltas.determine_urlopen_retry(
-        exception=urllib.error.HTTPError(None, 502, "Bad Gateway", None, None))
+        exception=urllib.error.HTTPError(None, 502, "Bad Gateway", None, None)
+    )
 
 
 def test_determine_urlopen_retry_false():
     assert not reportsizedeltas.determine_urlopen_retry(
-        exception=urllib.error.HTTPError(None, 401, "Unauthorized", None, None))
+        exception=urllib.error.HTTPError(None, 401, "Unauthorized", None, None)
+    )
 
 
 def test_get_page_count():
     page_count = 4
-    link_header = ('<https://api.github.com/repositories/919161/pulls?page=2>; rel="next", '
-                   '"<https://api.github.com/repositories/919161/pulls?page=' + str(page_count) + '>; rel="last"')
+    link_header = (
+        '<https://api.github.com/repositories/919161/pulls?page=2>; rel="next", '
+        '"<https://api.github.com/repositories/919161/pulls?page=' + str(page_count) + '>; rel="last"'
+    )
 
     assert page_count == reportsizedeltas.get_page_count(link_header=link_header)
 
 
-@pytest.mark.parametrize("report, column_heading, expected_column_number, expected_report",
-                         [([["Board", "foo memory type", "%"], ["foo board", 12, 234]],
-                           "foo memory type",
-                           1,
-                           [["Board", "foo memory type", "%"], ["foo board", 12, 234]]),
-                          ([["Board", "foo memory type", "%"], ["foo board", 12, 234, "bar board"]],
-                           "bar memory type",
-                           3,
-                           [["Board", "foo memory type", "%", "bar memory type", "%"],
-                            ["foo board", 12, 234, "bar board", "", ""]])])
+@pytest.mark.parametrize(
+    "report, column_heading, expected_column_number, expected_report",
+    [
+        (
+            [["Board", "foo memory type", "%"], ["foo board", 12, 234]],
+            "foo memory type",
+            1,
+            [["Board", "foo memory type", "%"], ["foo board", 12, 234]],
+        ),
+        (
+            [["Board", "foo memory type", "%"], ["foo board", 12, 234, "bar board"]],
+            "bar memory type",
+            3,
+            [["Board", "foo memory type", "%", "bar memory type", "%"], ["foo board", 12, 234, "bar board", "", ""]],
+        ),
+    ],
+)
 def test_get_report_column_number(report, column_heading, expected_column_number, expected_report):
-    assert reportsizedeltas.get_report_column_number(
-        report=report,
-        column_heading=column_heading
-    ) == expected_column_number
+    assert (
+        reportsizedeltas.get_report_column_number(report=report, column_heading=column_heading)
+        == expected_column_number
+    )
     assert report == expected_report
 
 
 def test_generate_markdown_table():
-    assert reportsizedeltas.generate_markdown_table(
-        row_list=[["Board", "Flash", "RAM"], ["foo:bar:baz", 42, 11]]
-    ) == "Board|Flash|RAM\n-|-|-\nfoo:bar:baz|42|11\n"
+    assert (
+        reportsizedeltas.generate_markdown_table(row_list=[["Board", "Flash", "RAM"], ["foo:bar:baz", 42, 11]])
+        == "Board|Flash|RAM\n-|-|-\nfoo:bar:baz|42|11\n"
+    )
 
 
 def test_generate_csv_table():

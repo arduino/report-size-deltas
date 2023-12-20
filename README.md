@@ -2,6 +2,7 @@
 
 [![Check npm status](https://github.com/arduino/report-size-deltas/actions/workflows/check-npm-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-npm-task.yml)
 [![Check Poetry status](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml)
+[![Check Python status](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml)
 [![Check Taskfiles status](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml)
 [![Tests](https://github.com/arduino/report-size-deltas/workflows/libraries/report-size-deltas%20workflow/badge.svg)](https://github.com/arduino/report-size-deltas/actions?workflow=libraries/report-size-deltas+workflow)
 [![Integration Tests](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml)
