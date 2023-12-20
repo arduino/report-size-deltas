@@ -516,9 +516,7 @@ class ReportSizeDeltas:
         report_markdown -- Markdown formatted report
         """
         print("::debug::Adding deltas report comment to pull request")
-        report_data = {"body": report_markdown}
-        report_data = json.dumps(obj=report_data)
-        report_data = report_data.encode(encoding="utf-8")
+        report_data = json.dumps(obj={"body": report_markdown}).encode(encoding="utf-8")
         url = "https://api.github.com/repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments"
 
         self.http_request(url=url, data=report_data)
@@ -710,8 +708,7 @@ def get_page_count(link_header: str | None) -> int:
         # Get the pagination data
         for link in link_header.split(","):
             if link[-13:] == '>; rel="last"':
-                link = re.split("[?&>]", link)
-                for parameter in link:
+                for parameter in re.split("[?&>]", link):
                     if parameter[:5] == "page=":
                         page_count = int(parameter.split("=")[1])
                         break
