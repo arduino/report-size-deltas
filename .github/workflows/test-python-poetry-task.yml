@@ -20,6 +20,7 @@ on:
       - "pyproject.toml"
       - "reportsizedeltas/tests/**"
       - "**.py"
+      - "**/pytest.ini"
   pull_request:
     paths:
       - ".github/workflows/test-python-poetry-task.ya?ml"
@@ -32,6 +33,7 @@ on:
       - "pyproject.toml"
       - "reportsizedeltas/tests/**"
       - "**.py"
+      - "**/pytest.ini"
   schedule:
     # Run periodically to catch breakage caused by external changes.
     - cron: "0 12 * * WED"
