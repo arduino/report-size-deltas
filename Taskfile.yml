@@ -16,6 +16,7 @@ tasks:
       - task: markdown:lint
       - task: npm:validate
       - task: poetry:validate
+      - task: python:check-types
       - task: python:lint
       - task: python:test
 
@@ -232,6 +233,16 @@ tasks:
       - |
         poetry run \
           coverage report
+
+  python:check-types:
+    desc: Check types in Python files
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - |
+        poetry run \
+          mypy \
+            .
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-python-task/Taskfile.yml
   python:format:
