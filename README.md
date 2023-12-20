@@ -39,15 +39,15 @@ This action comments on the pull request with a report on the resulting change i
 
 The action can be used in two ways:
 
-#### Run from a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule)
+#### Run from a scheduled workflow
 
 Recommended for public repositories.
 
-The use of a scheduled workflow is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
+The use of a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule) is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
 
 In this usage, the `sketches-reports-source` defines the name of the workflow artifact that contains the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
 
-#### Run from the same workflow as the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action
+#### Run from the same workflow as the `arduino/compile-sketches` action
 
 Recommended for private repositories.
 
