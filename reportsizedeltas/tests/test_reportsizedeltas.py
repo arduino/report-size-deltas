@@ -19,8 +19,10 @@ report_keys = reportsizedeltas.ReportSizeDeltas.ReportKeys()
 
 
 def get_reportsizedeltas_object(
-    repository_name="FooOwner/BarRepository", sketches_reports_source="foo-artifact-name", token="foo token"
-):
+    repository_name: str = "FooOwner/BarRepository",
+    sketches_reports_source: str = "foo-artifact-name",
+    token: str = "foo token",
+) -> reportsizedeltas.ReportSizeDeltas:
     """Return a reportsizedeltas.ReportSizeDeltas object to use in tests.
 
     Keyword arguments:
@@ -33,7 +35,7 @@ def get_reportsizedeltas_object(
     )
 
 
-def directories_are_same(left_directory, right_directory):
+def directories_are_same(left_directory, right_directory) -> bool:
     """Check recursively whether two directories contain the same files.
     Based on https://stackoverflow.com/a/6681395
 
