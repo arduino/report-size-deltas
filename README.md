@@ -73,7 +73,7 @@ In this usage, the `sketches-reports-source` defines the path to the folder cont
 ```yaml
 on:
   schedule:
-    - cron:  '*/5 * * * *'
+    - cron: "*/5 * * * *"
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -82,6 +82,7 @@ jobs:
 ```
 
 This must be used in conjunction with a workflow that runs the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action and uploads the resulting sketches report to a [workflow artifact](https://help.github.com/en/actions/configuring-and-managing-workflows/persisting-workflow-data-using-artifacts):
+
 ```yaml
 on: [push, pull_request]
 jobs:
@@ -123,7 +124,7 @@ jobs:
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
 
-      # This step is needed to pass the size data to the report job 
+      # This step is needed to pass the size data to the report job
       - name: Upload sketches report to workflow artifact
         uses: actions/upload-artifact@v3
         with:
@@ -132,7 +133,7 @@ jobs:
 
   # When using a matrix to compile for multiple boards, it's necessary to use a separate job for the deltas report
   report:
-    needs: compile  # Wait for the compile job to finish to get the data for the report
+    needs: compile # Wait for the compile job to finish to get the data for the report
     if: github.event_name == 'pull_request' # Only run the job when the workflow is triggered by a pull request
     runs-on: ubuntu-latest
     steps:

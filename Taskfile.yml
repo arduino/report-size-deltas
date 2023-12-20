@@ -134,7 +134,6 @@ tasks:
     cmds:
       - npm install
 
-
   # Parameter variables:
   # - PROJECT_PATH: path of the npm-managed project. Default value: "./"
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-npm-task/Taskfile.yml
