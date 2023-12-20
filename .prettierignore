@@ -1,0 +1,6 @@
+/.github/workflows/testdata/sketches-reports/
+/reportsizedeltas/tests/data/size-deltas-reports-new/
+/reportsizedeltas/tests/data/size-deltas-reports-old/
+.licenses/
+__pycache__/
+node_modules/
