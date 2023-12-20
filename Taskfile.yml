@@ -2,6 +2,7 @@
 version: "3"
 
 vars:
+  PYTHON_PROJECT_PATH: reportsizedeltas
   # Last version of ajv-cli with support for the JSON schema "Draft 4" specification
   SCHEMA_DRAFT_4_AJV_CLI_VERSION: 3.3.0
 
@@ -14,6 +15,7 @@ tasks:
       - task: npm:validate
       - task: poetry:validate
       - task: python:lint
+      - task: python:test
 
   fix:
     desc: Make automated corrections to the project's files
@@ -139,6 +141,15 @@ tasks:
           check \
             --lock
 
+  python:coverage-report:
+    desc: Show code coverage report
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - |
+        poetry run \
+          coverage report
+
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-python-task/Taskfile.yml
   python:format:
     desc: Format Python files
@@ -154,6 +165,20 @@ tasks:
       - task: poetry:install-deps
     cmds:
       - poetry run flake8 --show-source
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/test-python-poetry-task/Taskfile.yml
+  python:test:
+    desc: Run Python tests
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - |
+        export PYTHONPATH="${PWD}/{{.PYTHON_PROJECT_PATH}}"
+        poetry run \
+          coverage run \
+            --source="{{.PYTHON_PROJECT_PATH}}" \
+            --module \
+              pytest "{{.PYTHON_PROJECT_PATH}}/tests"
 
   # Make a temporary file named according to the passed TEMPLATE variable and print the path passed to stdout
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/windows-task/Taskfile.yml
