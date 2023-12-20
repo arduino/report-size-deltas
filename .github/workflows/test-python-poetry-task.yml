@@ -1,0 +1,130 @@
+# Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/test-python-poetry-task.md
+name: Test Python
+
+env:
+  # See: https://github.com/actions/setup-python/tree/main#available-versions-of-python
+  PYTHON_VERSION: "3.11.6"
+
+# See: https://docs.github.com/actions/using-workflows/events-that-trigger-workflows
+on:
+  create:
+  push:
+    paths:
+      - ".github/workflows/test-python-poetry-task.ya?ml"
+      - ".github/.?codecov.ya?ml"
+      - "dev/.?codecov.ya?ml"
+      - ".?codecov.ya?ml"
+      - "Taskfile.ya?ml"
+      - ".python-version"
+      - "poetry.lock"
+      - "pyproject.toml"
+      - "reportsizedeltas/tests/**"
+      - "**.py"
+  pull_request:
+    paths:
+      - ".github/workflows/test-python-poetry-task.ya?ml"
+      - ".github/.?codecov.ya?ml"
+      - "dev/.?codecov.ya?ml"
+      - ".?codecov.ya?ml"
+      - "Taskfile.ya?ml"
+      - ".python-version"
+      - "poetry.lock"
+      - "pyproject.toml"
+      - "reportsizedeltas/tests/**"
+      - "**.py"
+  schedule:
+    # Run periodically to catch breakage caused by external changes.
+    - cron: "0 12 * * WED"
+  workflow_dispatch:
+  repository_dispatch:
+
+jobs:
+  run-determination:
+    runs-on: ubuntu-latest
+    outputs:
+      result: ${{ steps.determination.outputs.result }}
+    permissions: {}
+    steps:
+      - name: Determine if the rest of the workflow should run
+        id: determination
+        run: |
+          RELEASE_BRANCH_REGEX="^refs/heads/v[0-9]+$"
+          # The `create` event trigger doesn't support `branches` filters, so it's necessary to use Bash instead.
+          if [[
+            "${{ github.event_name }}" != "create" ||
+            "${{ github.ref }}" =~ $RELEASE_BRANCH_REGEX
+          ]]; then
+            # Run the other jobs.
+            RESULT="true"
+          else
+            # There is no need to run the other jobs.
+            RESULT="false"
+          fi
+
+          echo "result=$RESULT" >> $GITHUB_OUTPUT
+
+  test:
+    needs: run-determination
+    if: needs.run-determination.outputs.result == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      COVERAGE_DATA_FILENAME: coverage.xml
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Poetry
+        run: pip install poetry
+
+      - name: Install Task
+        uses: arduino/setup-task@v1
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          version: 3.x
+
+      - name: Run tests
+        uses: liskin/gh-problem-matcher-wrap@v3
+        with:
+          linters: pytest
+          run: task python:test
+
+      - name: Display code coverage report
+        run: task python:coverage-report
+
+      # codecov/codecov-action only makes the conversion if the `coverage` package is installed in the global runner
+      # environment
+      - name: Convert code coverage report to format required by Codecov
+        run: |
+          poetry run \
+            coverage xml \
+              -o "${{ github.workspace }}/${{ env.COVERAGE_DATA_FILENAME }}"
+
+      # A token is used to avoid intermittent spurious job failures caused by rate limiting.
+      - name: Set up Codecov upload token
+        run: |
+          if [[ "${{ github.repository }}" == "arduino/compile-sketches" ]]; then
+            # In order to avoid uploads of data from forks, only use the token for runs in the parent repo.
+            # Token is intentionally exposed.
+            # See: https://community.codecov.com/t/upload-issues-unable-to-locate-build-via-github-actions-api/3954
+            CODECOV_TOKEN="3889efcb-4ed3-4d07-980a-99a3896bd9b8"
+          else
+            # codecov/codecov-action does unauthenticated upload if empty string is passed via the `token` input.
+            CODECOV_TOKEN=""
+          fi
+          echo "CODECOV_TOKEN=$CODECOV_TOKEN" >> "$GITHUB_ENV"
+
+      - name: Upload coverage report to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          fail_ci_if_error: true
+          file: ${{ env.COVERAGE_DATA_FILENAME }}
+          token: ${{ env.CODECOV_TOKEN }}

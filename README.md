@@ -4,10 +4,10 @@
 [![Check Poetry status](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-poetry-task.yml)
 [![Check Python status](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-python-task.yml)
 [![Check Taskfiles status](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/check-taskfiles.yml)
-[![Tests](https://github.com/arduino/report-size-deltas/workflows/libraries/report-size-deltas%20workflow/badge.svg)](https://github.com/arduino/report-size-deltas/actions?workflow=libraries/report-size-deltas+workflow)
 [![Integration Tests](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-integration.yml)
 [![Spell Check status](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml)
 [![Sync Labels status](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml)
+[![Test Python status](https://github.com/arduino/report-size-deltas/actions/workflows/test-python-poetry-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-python-poetry-task.yml)
 [![codecov](https://codecov.io/gh/arduino/report-size-deltas/branch/master/graph/badge.svg)](https://codecov.io/gh/arduino/report-size-deltas)
 
 This action comments on the pull request with a report on the resulting change in memory usage of the [Arduino](https://www.arduino.cc/) sketches compiled by the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action. This should be run from a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule).
