@@ -268,15 +268,13 @@ class ReportSizeDeltas:
         # Create temporary folder
         artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
         try:
+            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip"
             # Download artifact
-            with open(
-                file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip", mode="wb"
-            ) as out_file:
+            with open(file=artifact_zip_file, mode="wb") as out_file:
                 with self.raw_http_request(url=artifact_download_url) as fp:
                     out_file.write(fp.read())
 
             # Unzip artifact
-            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip"
             with zipfile.ZipFile(file=artifact_zip_file, mode="r") as zip_ref:
                 zip_ref.extractall(path=artifact_folder_object.name)
             os.remove(artifact_zip_file)
