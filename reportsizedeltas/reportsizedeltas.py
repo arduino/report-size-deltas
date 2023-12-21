@@ -298,7 +298,7 @@ class ReportSizeDeltas:
             sketches_reports = []
             for report_filename in sorted(artifact_folder.iterdir()):
                 # Combine sketches reports into an array
-                with open(file=report_filename.joinpath(report_filename)) as report_file:
+                with open(file=report_filename) as report_file:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)
