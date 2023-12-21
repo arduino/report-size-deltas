@@ -239,7 +239,7 @@ def test_report_size_deltas_from_local_reports(mocker, monkeypatch):
 
 
 def test_report_size_deltas_from_workflow_artifacts(mocker):
-    artifact_download_url = "test_artifact_download_url"
+    artifact_data = unittest.mock.sentinel.artifact_data
     artifact_folder_object = "test_artifact_folder_object"
     pr_head_sha = "pr-head-sha"
     sketches_reports = [{reportsizedeltas.ReportSizeDeltas.ReportKeys.commit_hash: pr_head_sha}]
@@ -258,9 +258,9 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     )
     mocker.patch("reportsizedeltas.ReportSizeDeltas.report_exists", autospec=True, return_value=False)
     mocker.patch(
-        "reportsizedeltas.ReportSizeDeltas.get_artifact_download_url_for_sha",
+        "reportsizedeltas.ReportSizeDeltas.get_artifact_data_for_sha",
         autospec=True,
-        return_value=artifact_download_url,
+        return_value=artifact_data,
     )
     mocker.patch("reportsizedeltas.ReportSizeDeltas.get_artifact", autospec=True, return_value=artifact_folder_object)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.get_sketches_reports", autospec=True, return_value=sketches_reports)
@@ -286,7 +286,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
 
     # Test handling of no report artifact
     reportsizedeltas.ReportSizeDeltas.report_exists.return_value = False
-    reportsizedeltas.ReportSizeDeltas.get_artifact_download_url_for_sha.return_value = None
+    reportsizedeltas.ReportSizeDeltas.get_artifact_data_for_sha.return_value = None
     mocker.resetall()
 
     report_size_deltas.report_size_deltas_from_workflow_artifacts()
@@ -294,7 +294,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     report_size_deltas.comment_report.assert_not_called()
 
     # Test handling of old sketches report artifacts
-    reportsizedeltas.ReportSizeDeltas.get_artifact_download_url_for_sha.return_value = artifact_download_url
+    reportsizedeltas.ReportSizeDeltas.get_artifact_data_for_sha.return_value = artifact_data
     reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = None
     mocker.resetall()
 
@@ -321,7 +321,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_exists_calls = []
-    get_artifact_download_url_for_sha_calls = []
+    get_artifact_data_for_sha_calls = []
     get_sketches_reports_calls = []
     generate_report_calls = []
     comment_report_calls = []
@@ -329,7 +329,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
         report_exists_calls.append(
             unittest.mock.call(report_size_deltas, pr_number=pr_data["number"], pr_head_sha=json_data[0]["head"]["sha"])
         )
-        get_artifact_download_url_for_sha_calls.append(
+        get_artifact_data_for_sha_calls.append(
             unittest.mock.call(
                 report_size_deltas,
                 pr_user_login=pr_data["user"]["login"],
@@ -345,8 +345,8 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
             unittest.mock.call(report_size_deltas, pr_number=pr_data["number"], report_markdown=report)
         )
     report_size_deltas.report_exists.assert_has_calls(calls=report_exists_calls)
-    report_size_deltas.get_artifact_download_url_for_sha.assert_has_calls(calls=get_artifact_download_url_for_sha_calls)
-    report_size_deltas.get_artifact.assert_called_with(report_size_deltas, artifact_download_url=artifact_download_url)
+    report_size_deltas.get_artifact_data_for_sha.assert_has_calls(calls=get_artifact_data_for_sha_calls)
+    report_size_deltas.get_artifact.assert_called_with(report_size_deltas, artifact_data=artifact_data)
     report_size_deltas.get_sketches_reports.assert_has_calls(calls=get_sketches_reports_calls)
     report_size_deltas.generate_report.assert_has_calls(calls=generate_report_calls)
     report_size_deltas.comment_report.assert_has_calls(calls=comment_report_calls)
@@ -373,12 +373,12 @@ def test_report_exists():
     assert not report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf")
 
 
-def test_get_artifact_download_url_for_sha():
+def test_get_artifact_data_for_sha():
     repository_name = "test_name/test_repo"
     pr_user_login = "test_pr_user_login"
     pr_head_ref = "test_pr_head_ref"
     pr_head_sha = "bar123"
-    test_artifact_url = "test_artifact_url"
+    test_artifact_data = unittest.mock.sentinel.artifact_data
     run_id = "4567"
 
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
@@ -387,11 +387,11 @@ def test_get_artifact_download_url_for_sha():
     report_size_deltas.api_request = unittest.mock.MagicMock(
         return_value={"json_data": json_data, "additional_pages": True, "page_count": 3}
     )
-    report_size_deltas.get_artifact_download_url_for_run = unittest.mock.MagicMock(return_value=None)
+    report_size_deltas.get_artifact_data_for_run = unittest.mock.MagicMock(return_value=None)
 
     # No SHA match
     assert (
-        report_size_deltas.get_artifact_download_url_for_sha(
+        report_size_deltas.get_artifact_data_for_sha(
             pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha="foosha"
         )
         is None
@@ -409,30 +409,30 @@ def test_get_artifact_download_url_for_sha():
 
     # SHA match, but no artifact for run
     assert (
-        report_size_deltas.get_artifact_download_url_for_sha(
+        report_size_deltas.get_artifact_data_for_sha(
             pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha=pr_head_sha
         )
         is None
     )
 
-    report_size_deltas.get_artifact_download_url_for_run = unittest.mock.MagicMock(return_value=test_artifact_url)
+    report_size_deltas.get_artifact_data_for_run = unittest.mock.MagicMock(return_value=test_artifact_data)
 
     # SHA match, artifact match
-    assert test_artifact_url == (
-        report_size_deltas.get_artifact_download_url_for_sha(
+    assert test_artifact_data == (
+        report_size_deltas.get_artifact_data_for_sha(
             pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha=pr_head_sha
         )
     )
 
-    report_size_deltas.get_artifact_download_url_for_run.assert_called_once_with(run_id=run_id)
+    report_size_deltas.get_artifact_data_for_run.assert_called_once_with(run_id=run_id)
 
 
 @pytest.mark.parametrize("expired", [True, False])
 @pytest.mark.parametrize("artifact_name", ["test_sketches_reports_source", "incorrect-artifact-name"])
-def test_get_artifact_download_url_for_run(expired, artifact_name):
+def test_get_artifact_data_for_run(expired, artifact_name):
     repository_name = "test_name/test_repo"
     sketches_reports_source = "test_sketches_reports_source"
-    archive_download_url = "archive_download_url"
+    artifact_data = {"name": artifact_name, "archive_download_url": "archive_download_url", "expired": expired}
     run_id = "1234"
 
     report_size_deltas = get_reportsizedeltas_object(
@@ -441,7 +441,7 @@ def test_get_artifact_download_url_for_run(expired, artifact_name):
 
     json_data = {
         "artifacts": [
-            {"name": artifact_name, "archive_download_url": archive_download_url, "expired": expired},
+            artifact_data,
             {"name": "bar123", "archive_download_url": "wrong_artifact_url", "expired": False},
         ]
     }
@@ -449,11 +449,11 @@ def test_get_artifact_download_url_for_run(expired, artifact_name):
         return_value={"json_data": json_data, "additional_pages": False, "page_count": 1}
     )
 
-    download_url = report_size_deltas.get_artifact_download_url_for_run(run_id=run_id)
+    data = report_size_deltas.get_artifact_data_for_run(run_id=run_id)
     if not expired and artifact_name == sketches_reports_source:
-        assert download_url == archive_download_url
+        assert data == artifact_data
     else:
-        assert download_url is None
+        assert data is None
 
     report_size_deltas.api_request.assert_called_once_with(
         request="repos/" + repository_name + "/actions/runs/" + str(run_id) + "/artifacts", page_number=1
@@ -472,7 +472,10 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
     real_artifact_name = "correct-artifact-name"
     artifact_archive_destination_path = artifact_destination_path.joinpath(real_artifact_name + ".zip")
 
-    artifact_download_url = artifact_destination_path.joinpath(test_artifact_name + ".zip").as_uri()
+    artifact_data = {
+        "archive_download_url": artifact_destination_path.joinpath(test_artifact_name + ".zip").as_uri(),
+        "name": "artifact_name",
+    }
 
     # Create an archive file
     with zipfile.ZipFile(file=artifact_archive_destination_path, mode="a") as zip_ref:
@@ -482,14 +485,14 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
     report_size_deltas = get_reportsizedeltas_object()
 
     if expected_success:
-        artifact_folder_object = report_size_deltas.get_artifact(artifact_download_url=artifact_download_url)
+        artifact_folder_object = report_size_deltas.get_artifact(artifact_data=artifact_data)
 
         with artifact_folder_object as artifact_folder:
             # Verify that the artifact matches the source
             assert directories_are_same(left_directory=artifact_source_path, right_directory=artifact_folder)
     else:
         with pytest.raises(expected_exception=urllib.error.URLError):
-            report_size_deltas.get_artifact(artifact_download_url=artifact_download_url)
+            report_size_deltas.get_artifact(artifact_data=artifact_data)
 
 
 @pytest.mark.parametrize(

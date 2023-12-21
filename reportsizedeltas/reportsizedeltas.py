@@ -140,15 +140,15 @@ class ReportSizeDeltas:
                     print("::debug::Report already exists")
                     continue
 
-                artifact_download_url = self.get_artifact_download_url_for_sha(
+                artifact_data = self.get_artifact_data_for_sha(
                     pr_user_login=pr_data["user"]["login"], pr_head_ref=pr_data["head"]["ref"], pr_head_sha=pr_head_sha
                 )
-                if artifact_download_url is None:
+                if artifact_data is None:
                     # Go on to the next PR
                     print("::debug::No sketches report artifact found")
                     continue
 
-                artifact_folder_object = self.get_artifact(artifact_download_url=artifact_download_url)
+                artifact_folder_object = self.get_artifact(artifact_data=artifact_data)
 
                 sketches_reports = self.get_sketches_reports(artifact_folder_object=artifact_folder_object)
 
@@ -195,8 +195,8 @@ class ReportSizeDeltas:
         # No reports found for the PR's head SHA
         return False
 
-    def get_artifact_download_url_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str) -> str | None:
-        """Return the report artifact download URL associated with the given head commit hash.
+    def get_artifact_data_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str) -> str | None:
+        """Return the data for the report artifact associated with the given head commit hash.
 
         Keyword arguments:
         pr_user_login -- user name of the PR author (used to reduce number of GitHub API requests)
@@ -222,9 +222,9 @@ class ReportSizeDeltas:
             for run_data in runs_data["workflow_runs"]:
                 if run_data["head_sha"] == pr_head_sha:
                     # Check if this run has the artifact we're looking for
-                    artifact_download_url = self.get_artifact_download_url_for_run(run_id=run_data["id"])
-                    if artifact_download_url is not None:
-                        return artifact_download_url
+                    artifact_data = self.get_artifact_data_for_run(run_id=run_data["id"])
+                    if artifact_data is not None:
+                        return artifact_data
 
             page_number += 1
             page_count = api_data["page_count"]
@@ -232,8 +232,8 @@ class ReportSizeDeltas:
         # No matching artifact found
         return None
 
-    def get_artifact_download_url_for_run(self, run_id: str) -> str | None:
-        """Return the report artifact download URL associated with the given GitHub Actions workflow run.
+    def get_artifact_data_for_run(self, run_id: str):
+        """Return the data for the report artifact associated with the given GitHub Actions workflow run.
 
         Keyword arguments:
         run_id -- GitHub Actions workflow run ID
@@ -251,7 +251,7 @@ class ReportSizeDeltas:
             for artifact_data in artifacts_data["artifacts"]:
                 # The artifact is identified by a specific name
                 if not artifact_data["expired"] and artifact_data["name"] == self.sketches_reports_source:
-                    return artifact_data["archive_download_url"]
+                    return artifact_data
 
             page_number += 1
             page_count = api_data["page_count"]
@@ -259,19 +259,19 @@ class ReportSizeDeltas:
         # No matching artifact found
         return None
 
-    def get_artifact(self, artifact_download_url: str):
+    def get_artifact(self, artifact_data):
         """Download and unzip the artifact and return an object for the temporary directory containing it.
 
         Keyword arguments:
-        artifact_download_url -- URL to download the artifact from GitHub
+        artifact_data -- data object for the artifact
         """
         # Create temporary folder
         artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
         try:
-            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip"
+            artifact_zip_file = artifact_folder_object.name + "/" + artifact_data["name"] + ".zip"
             # Download artifact
             with open(file=artifact_zip_file, mode="wb") as out_file:
-                with self.raw_http_request(url=artifact_download_url) as fp:
+                with self.raw_http_request(url=artifact_data["archive_download_url"]) as fp:
                     out_file.write(fp.read())
 
             # Unzip artifact
