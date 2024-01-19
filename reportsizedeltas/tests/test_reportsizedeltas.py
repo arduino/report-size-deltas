@@ -460,10 +460,7 @@ def test_get_artifact_data_for_run(expired, artifact_name):
     )
 
 
-@pytest.mark.parametrize(
-    "test_artifact_name, expected_success", [("correct-artifact-name", True), ("incorrect-artifact-name", False)]
-)
-def test_get_artifact(tmp_path, test_artifact_name, expected_success):
+def test_get_artifact_success(tmp_path):
     artifact_source_path = test_data_path.joinpath("size-deltas-reports-new")
 
     # Create temporary folder
@@ -473,7 +470,7 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
     artifact_archive_destination_path = artifact_destination_path.joinpath(real_artifact_name + ".zip")
 
     artifact_data = {
-        "archive_download_url": artifact_destination_path.joinpath(test_artifact_name + ".zip").as_uri(),
+        "archive_download_url": artifact_destination_path.joinpath(real_artifact_name + ".zip").as_uri(),
         "name": "artifact_name",
     }
 
@@ -484,15 +481,23 @@ def test_get_artifact(tmp_path, test_artifact_name, expected_success):
 
     report_size_deltas = get_reportsizedeltas_object()
 
-    if expected_success:
-        artifact_folder_object = report_size_deltas.get_artifact(artifact_data=artifact_data)
+    artifact_folder_object = report_size_deltas.get_artifact(artifact_data=artifact_data)
 
-        with artifact_folder_object as artifact_folder:
-            # Verify that the artifact matches the source
-            assert directories_are_same(left_directory=artifact_source_path, right_directory=artifact_folder)
-    else:
-        with pytest.raises(expected_exception=urllib.error.URLError):
-            report_size_deltas.get_artifact(artifact_data=artifact_data)
+    with artifact_folder_object as artifact_folder:
+        # Verify that the artifact matches the source
+        assert directories_are_same(left_directory=artifact_source_path, right_directory=artifact_folder)
+
+
+def test_get_artifact_failure():
+    artifact_data = {
+        "archive_download_url": "http://httpstat.us/404",
+        "name": "artifact_name",
+    }
+
+    report_size_deltas = get_reportsizedeltas_object()
+
+    with pytest.raises(expected_exception=urllib.error.URLError):
+        report_size_deltas.get_artifact(artifact_data=artifact_data)
 
 
 @pytest.mark.parametrize(
