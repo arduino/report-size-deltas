@@ -13,6 +13,20 @@ jobs:
   upload:
     runs-on: ubuntu-latest
 
+    env:
+      ARTIFACT_NAME_PREFIX: sketches-report-
+
+    strategy:
+      fail-fast: false
+      matrix:
+        parameters:
+          # Coverage for pre-actions/upload-artifact@v4 approach where all reports are stored in a single artifact.
+          - artifact-name-suffix: multi
+            reports-folder: multi-report-artifact
+          # Coverage for actions/upload-artifact@v4 approach where each report is stored in a separate artifact.
+          - artifact-name-suffix: arduino-samd-mkrzero
+            reports-folder: per-report-artifact
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -26,7 +40,7 @@ jobs:
           echo "SKETCHES_REPORTS_PATH=$SKETCHES_REPORTS_PATH" >> "$GITHUB_ENV"
           mkdir --parents "$SKETCHES_REPORTS_PATH"
 
-          cd "${{ github.workspace }}/.github/workflows/testdata/sketches-reports/"
+          cd "${{ github.workspace }}/.github/workflows/testdata/artifact-source/${{ matrix.parameters.reports-folder }}"
           for reportFile in *.json; do
             jq '.commit_hash = "${{ github.event.pull_request.head.sha }}"' "$reportFile" > "${SKETCHES_REPORTS_PATH}/$reportFile"
           done
@@ -36,4 +50,4 @@ jobs:
         with:
           if-no-files-found: error
           path: ${{ env.SKETCHES_REPORTS_PATH }}
-          name: sketches-reports
+          name: ${{ env.ARTIFACT_NAME_PREFIX }}${{ matrix.parameters.artifact-name-suffix }}
