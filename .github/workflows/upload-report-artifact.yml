@@ -15,7 +15,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       # The action only does a deltas report when the sketches report's `commit_hash` value matches the PR head SHA
       - name: Update commit hash in reports
@@ -32,7 +32,7 @@ jobs:
           done
 
       - name: Save sketches report as workflow artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           if-no-files-found: error
           path: ${{ env.SKETCHES_REPORTS_PATH }}
