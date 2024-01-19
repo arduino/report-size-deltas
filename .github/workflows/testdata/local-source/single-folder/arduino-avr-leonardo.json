@@ -1,0 +1,245 @@
+{
+  "commit_hash": "651f05f4d4aca30ac359e972c01568f873112d43",
+  "commit_url": "https://github.com/per1234/generate-size-deltas-report/commit/651f05f4d4aca30ac359e972c01568f873112d43",
+  "boards": [
+    {
+      "board": "arduino:avr:leonardo",
+      "sketches": [
+        {
+          "name": "examples/MIDIUSB_clock",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": 28672,
+              "current": {
+                "absolute": 4792,
+                "relative": 16.71
+              },
+              "previous": {
+                "absolute": 4792,
+                "relative": 16.71
+              },
+              "delta": {
+                "absolute": 0,
+                "relative": 0.0
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": 2560,
+              "current": {
+                "absolute": 443,
+                "relative": 17.3
+              },
+              "previous": {
+                "absolute": 443,
+                "relative": 17.3
+              },
+              "delta": {
+                "absolute": 0,
+                "relative": 0.0
+              }
+            }
+          ],
+          "warnings": {
+            "current": {
+              "absolute": 2
+            },
+            "previous": {
+              "absolute": 2
+            },
+            "delta": {
+              "absolute": 0
+            }
+          }
+        },
+        {
+          "name": "examples/MIDIUSB_loop",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": 28672,
+              "current": {
+                "absolute": 4870,
+                "relative": 16.99
+              },
+              "previous": {
+                "absolute": 4870,
+                "relative": 16.99
+              },
+              "delta": {
+                "absolute": 0,
+                "relative": 0.0
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": 2560,
+              "current": {
+                "absolute": 441,
+                "relative": 17.23
+              },
+              "previous": {
+                "absolute": 441,
+                "relative": 17.23
+              },
+              "delta": {
+                "absolute": 0,
+                "relative": 0.0
+              }
+            }
+          ],
+          "warnings": {
+            "current": {
+              "absolute": 3
+            },
+            "previous": {
+              "absolute": 3
+            },
+            "delta": {
+              "absolute": 0
+            }
+          }
+        },
+        {
+          "name": "examples/MIDIUSB_read",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": 28672,
+              "current": {
+                "absolute": 4908,
+                "relative": 17.12
+              },
+              "previous": {
+                "absolute": 4908,
+                "relative": 17.12
+              },
+              "delta": {
+                "absolute": 0,
+                "relative": 0.0
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": 2560,
+              "current": {
+                "absolute": 457,
+                "relative": 17.85
+              },
+              "previous": {
+                "absolute": 457,
+                "relative": 17.85
+              },
+              "delta": {
+                "absolute": 0,
+                "relative": 0.0
+              }
+            }
+          ],
+          "warnings": {
+            "current": {
+              "absolute": 3
+            },
+            "previous": {
+              "absolute": 3
+            },
+            "delta": {
+              "absolute": 0
+            }
+          }
+        },
+        {
+          "name": "examples/MIDIUSB_write",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": 28672,
+              "current": {
+                "absolute": 4524,
+                "relative": 15.78
+              },
+              "previous": {
+                "absolute": 4564,
+                "relative": 15.92
+              },
+              "delta": {
+                "absolute": -40,
+                "relative": -0.14
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": 2560,
+              "current": {
+                "absolute": 197,
+                "relative": 7.7
+              },
+              "previous": {
+                "absolute": 213,
+                "relative": 8.32
+              },
+              "delta": {
+                "absolute": -16,
+                "relative": -0.62
+              }
+            }
+          ],
+          "warnings": {
+            "current": {
+              "absolute": 3
+            },
+            "previous": {
+              "absolute": 3
+            },
+            "delta": {
+              "absolute": 0
+            }
+          }
+        }
+      ],
+      "sizes": [
+        {
+          "name": "flash",
+          "maximum": 28672,
+          "delta": {
+            "absolute": {
+              "minimum": -40,
+              "maximum": 0
+            },
+            "relative": {
+              "minimum": -0.14,
+              "maximum": 0.0
+            }
+          }
+        },
+        {
+          "name": "RAM for global variables",
+          "maximum": 2560,
+          "delta": {
+            "absolute": {
+              "minimum": -16,
+              "maximum": 0
+            },
+            "relative": {
+              "minimum": -0.62,
+              "maximum": 0.0
+            }
+          }
+        }
+      ],
+      "warnings": {
+        "delta": {
+          "absolute": {
+            "minimum": 0,
+            "maximum": 0
+          }
+        }
+      }
+    }
+  ]
+}

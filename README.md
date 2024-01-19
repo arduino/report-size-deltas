@@ -46,7 +46,9 @@ Recommended for public repositories.
 
 The use of a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule) is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
 
-In this usage, the `sketches-reports-source` defines the name of the workflow artifact that contains the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
+In this usage, the `sketches-reports-source` input defines the regular expression matching the names of the workflow artifacts that contain the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
+
+The regular expression syntax is [that of the Python `re` module](https://docs.python.org/3.11/library/re.html#regular-expression-syntax).
 
 #### Run from the same workflow as the `arduino/compile-sketches` action
 
@@ -59,6 +61,8 @@ In order to get reports for pull requests from forks, the ["Send write tokens to
 If the "Send write tokens to workflows from fork pull requests" setting is not enabled but the ["Run workflows from fork pull requests" setting](https://docs.github.com/en/github/administering-a-repository/disabling-or-limiting-github-actions-for-a-repository#enabling-workflows-for-private-repository-forks) is enabled, the workflow should be configured to only run the action when the pull request is not from a fork (`if: github.event.pull_request.head.repo.full_name == github.repository`). This will prevent workflow job failures that would otherwise be caused when the report creation failed due to not having the necessary write permissions.
 
 In this usage, the `sketches-reports-source` defines the path to the folder containing the memory usage data, as specified to the [`actions/download-artifact`](https://github.com/actions/download-artifact) action via its `path` input.
+
+The path is searched recursively for sketches report files.
 
 ### `github-token`
 

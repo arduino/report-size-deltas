@@ -20,14 +20,15 @@ report_keys = reportsizedeltas.ReportSizeDeltas.ReportKeys()
 
 def get_reportsizedeltas_object(
     repository_name: str = "FooOwner/BarRepository",
-    sketches_reports_source: str = "foo-artifact-name",
+    sketches_reports_source: str = "foo-artifact-pattern",
     token: str = "foo token",
 ) -> reportsizedeltas.ReportSizeDeltas:
     """Return a reportsizedeltas.ReportSizeDeltas object to use in tests.
 
     Keyword arguments:
     repository_name -- repository owner and name e.g., octocat/Hello-World
-    sketches_reports_source -- name of the workflow artifact that contains the memory usage data
+    sketches_reports_source -- regular expression for the names of the workflow artifacts that contain the memory usage
+                               data
     token -- GitHub access token
     """
     return reportsizedeltas.ReportSizeDeltas(
@@ -103,7 +104,7 @@ def setup_environment_variables(monkeypatch):
         """A container for the values of the environment variables"""
 
         repository_name = "GoldenOwner/GoldenRepository"
-        sketches_reports_source = "golden-source-name"
+        sketches_reports_source = "golden-source-pattern"
         token = "golden-github-token"
 
     monkeypatch.setenv("GITHUB_REPOSITORY", ActionInputs.repository_name)
@@ -139,11 +140,11 @@ def test_main(monkeypatch, mocker, setup_environment_variables):
 def test_main_size_deltas_report_artifact_name_deprecation_warning(
     capsys, mocker, monkeypatch, setup_environment_variables, use_size_deltas_report_artifact_name
 ):
-    size_deltas_report_artifact_name = "golden-size-deltas-report-artifact-name-value"
+    size_deltas_report_artifact_pattern = "golden-size-deltas-report-artifact-name-value"
 
     if use_size_deltas_report_artifact_name:
-        monkeypatch.setenv("INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME", size_deltas_report_artifact_name)
-        expected_sketches_reports_source = size_deltas_report_artifact_name
+        monkeypatch.setenv("INPUT_SIZE-DELTAS-REPORTS-ARTIFACT-NAME", size_deltas_report_artifact_pattern)
+        expected_sketches_reports_source = size_deltas_report_artifact_pattern
     else:
         expected_sketches_reports_source = setup_environment_variables.sketches_reports_source
 
@@ -232,15 +233,15 @@ def test_report_size_deltas_from_local_reports(mocker, monkeypatch):
     report_size_deltas.report_size_deltas_from_local_reports()
 
     report_size_deltas.get_sketches_reports.assert_called_once_with(
-        report_size_deltas, artifact_folder_object=sketches_reports_folder
+        report_size_deltas, artifacts_folder_object=sketches_reports_folder
     )
     report_size_deltas.generate_report.assert_called_once_with(report_size_deltas, sketches_reports=sketches_reports)
     report_size_deltas.comment_report.assert_called_once_with(report_size_deltas, pr_number=42, report_markdown=report)
 
 
 def test_report_size_deltas_from_workflow_artifacts(mocker):
-    artifact_data = unittest.mock.sentinel.artifact_data
-    artifact_folder_object = "test_artifact_folder_object"
+    artifacts_data = unittest.mock.sentinel.artifacts_data
+    artifacts_folder_object = "test_artifacts_folder_object"
     pr_head_sha = "pr-head-sha"
     sketches_reports = [{reportsizedeltas.ReportSizeDeltas.ReportKeys.commit_hash: pr_head_sha}]
     report = "foo report"
@@ -258,11 +259,11 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     )
     mocker.patch("reportsizedeltas.ReportSizeDeltas.report_exists", autospec=True, return_value=False)
     mocker.patch(
-        "reportsizedeltas.ReportSizeDeltas.get_artifact_data_for_sha",
+        "reportsizedeltas.ReportSizeDeltas.get_artifacts_data_for_sha",
         autospec=True,
-        return_value=artifact_data,
+        return_value=artifacts_data,
     )
-    mocker.patch("reportsizedeltas.ReportSizeDeltas.get_artifact", autospec=True, return_value=artifact_folder_object)
+    mocker.patch("reportsizedeltas.ReportSizeDeltas.get_artifacts", autospec=True, return_value=artifacts_folder_object)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.get_sketches_reports", autospec=True, return_value=sketches_reports)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.generate_report", autospec=True, return_value=report)
     mocker.patch("reportsizedeltas.ReportSizeDeltas.comment_report", autospec=True)
@@ -286,7 +287,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
 
     # Test handling of no report artifact
     reportsizedeltas.ReportSizeDeltas.report_exists.return_value = False
-    reportsizedeltas.ReportSizeDeltas.get_artifact_data_for_sha.return_value = None
+    reportsizedeltas.ReportSizeDeltas.get_artifacts_data_for_sha.return_value = None
     mocker.resetall()
 
     report_size_deltas.report_size_deltas_from_workflow_artifacts()
@@ -294,7 +295,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     report_size_deltas.comment_report.assert_not_called()
 
     # Test handling of old sketches report artifacts
-    reportsizedeltas.ReportSizeDeltas.get_artifact_data_for_sha.return_value = artifact_data
+    reportsizedeltas.ReportSizeDeltas.get_artifacts_data_for_sha.return_value = artifacts_data
     reportsizedeltas.ReportSizeDeltas.get_sketches_reports.return_value = None
     mocker.resetall()
 
@@ -321,7 +322,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
     report_size_deltas.report_size_deltas_from_workflow_artifacts()
 
     report_exists_calls = []
-    get_artifact_data_for_sha_calls = []
+    get_artifacts_data_for_sha_calls = []
     get_sketches_reports_calls = []
     generate_report_calls = []
     comment_report_calls = []
@@ -329,7 +330,7 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
         report_exists_calls.append(
             unittest.mock.call(report_size_deltas, pr_number=pr_data["number"], pr_head_sha=json_data[0]["head"]["sha"])
         )
-        get_artifact_data_for_sha_calls.append(
+        get_artifacts_data_for_sha_calls.append(
             unittest.mock.call(
                 report_size_deltas,
                 pr_user_login=pr_data["user"]["login"],
@@ -338,15 +339,15 @@ def test_report_size_deltas_from_workflow_artifacts(mocker):
             )
         )
         get_sketches_reports_calls.append(
-            unittest.mock.call(report_size_deltas, artifact_folder_object=artifact_folder_object)
+            unittest.mock.call(report_size_deltas, artifacts_folder_object=artifacts_folder_object)
         )
         generate_report_calls.append(unittest.mock.call(report_size_deltas, sketches_reports=sketches_reports))
         comment_report_calls.append(
             unittest.mock.call(report_size_deltas, pr_number=pr_data["number"], report_markdown=report)
         )
     report_size_deltas.report_exists.assert_has_calls(calls=report_exists_calls)
-    report_size_deltas.get_artifact_data_for_sha.assert_has_calls(calls=get_artifact_data_for_sha_calls)
-    report_size_deltas.get_artifact.assert_called_with(report_size_deltas, artifact_data=artifact_data)
+    report_size_deltas.get_artifacts_data_for_sha.assert_has_calls(calls=get_artifacts_data_for_sha_calls)
+    report_size_deltas.get_artifacts.assert_called_with(report_size_deltas, artifacts_data=artifacts_data)
     report_size_deltas.get_sketches_reports.assert_has_calls(calls=get_sketches_reports_calls)
     report_size_deltas.generate_report.assert_has_calls(calls=generate_report_calls)
     report_size_deltas.comment_report.assert_has_calls(calls=comment_report_calls)
@@ -373,12 +374,12 @@ def test_report_exists():
     assert not report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf")
 
 
-def test_get_artifact_data_for_sha():
+def test_get_artifacts_data_for_sha():
     repository_name = "test_name/test_repo"
     pr_user_login = "test_pr_user_login"
     pr_head_ref = "test_pr_head_ref"
     pr_head_sha = "bar123"
-    test_artifact_data = unittest.mock.sentinel.artifact_data
+    test_artifacts_data = unittest.mock.sentinel.artifacts_data
     run_id = "4567"
 
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
@@ -387,11 +388,11 @@ def test_get_artifact_data_for_sha():
     report_size_deltas.api_request = unittest.mock.MagicMock(
         return_value={"json_data": json_data, "additional_pages": True, "page_count": 3}
     )
-    report_size_deltas.get_artifact_data_for_run = unittest.mock.MagicMock(return_value=None)
+    report_size_deltas.get_artifacts_data_for_run = unittest.mock.MagicMock(return_value=None)
 
     # No SHA match
     assert (
-        report_size_deltas.get_artifact_data_for_sha(
+        report_size_deltas.get_artifacts_data_for_sha(
             pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha="foosha"
         )
         is None
@@ -409,114 +410,129 @@ def test_get_artifact_data_for_sha():
 
     # SHA match, but no artifact for run
     assert (
-        report_size_deltas.get_artifact_data_for_sha(
+        report_size_deltas.get_artifacts_data_for_sha(
             pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha=pr_head_sha
         )
         is None
     )
 
-    report_size_deltas.get_artifact_data_for_run = unittest.mock.MagicMock(return_value=test_artifact_data)
+    report_size_deltas.get_artifacts_data_for_run = unittest.mock.MagicMock(return_value=test_artifacts_data)
 
     # SHA match, artifact match
-    assert test_artifact_data == (
-        report_size_deltas.get_artifact_data_for_sha(
+    assert test_artifacts_data == (
+        report_size_deltas.get_artifacts_data_for_sha(
             pr_user_login=pr_user_login, pr_head_ref=pr_head_ref, pr_head_sha=pr_head_sha
         )
     )
 
-    report_size_deltas.get_artifact_data_for_run.assert_called_once_with(run_id=run_id)
+    report_size_deltas.get_artifacts_data_for_run.assert_called_once_with(run_id=run_id)
 
 
-@pytest.mark.parametrize("expired", [True, False])
-@pytest.mark.parametrize("artifact_name", ["test_sketches_reports_source", "incorrect-artifact-name"])
-def test_get_artifact_data_for_run(expired, artifact_name):
+@pytest.mark.parametrize(
+    "sketches_reports_source, artifacts_data, report_artifacts_data_assertion",
+    [
+        # Expired artifact
+        ("artifact-name", [{"expired": True, "name": "artifact-name"}], None),
+        # No artifacts
+        ("foo", [], None),
+        # Pattern is explicit artifact name
+        ("artifact-name", [{"expired": False, "name": "artifact-name"}], [{"expired": False, "name": "artifact-name"}]),
+        # Pattern is regular expression
+        (
+            "^artifact-prefix-.+",
+            [
+                {"expired": False, "name": "artifact-prefix-foo"},
+                {"expired": False, "name": "artifact-prefix-bar"},
+                {"expired": False, "name": "mismatch"},
+            ],
+            [{"expired": False, "name": "artifact-prefix-foo"}, {"expired": False, "name": "artifact-prefix-bar"}],
+        ),
+    ],
+)
+def test_get_artifacts_data_for_run(sketches_reports_source, artifacts_data, report_artifacts_data_assertion):
     repository_name = "test_name/test_repo"
-    sketches_reports_source = "test_sketches_reports_source"
-    artifact_data = {"name": artifact_name, "archive_download_url": "archive_download_url", "expired": expired}
     run_id = "1234"
 
     report_size_deltas = get_reportsizedeltas_object(
         repository_name=repository_name, sketches_reports_source=sketches_reports_source
     )
 
-    json_data = {
-        "artifacts": [
-            artifact_data,
-            {"name": "bar123", "archive_download_url": "wrong_artifact_url", "expired": False},
-        ]
-    }
+    json_data = {"artifacts": artifacts_data}
     report_size_deltas.api_request = unittest.mock.MagicMock(
         return_value={"json_data": json_data, "additional_pages": False, "page_count": 1}
     )
 
-    data = report_size_deltas.get_artifact_data_for_run(run_id=run_id)
-    if not expired and artifact_name == sketches_reports_source:
-        assert data == artifact_data
-    else:
-        assert data is None
+    assert report_size_deltas.get_artifacts_data_for_run(run_id=run_id) == report_artifacts_data_assertion
 
     report_size_deltas.api_request.assert_called_once_with(
         request="repos/" + repository_name + "/actions/runs/" + str(run_id) + "/artifacts", page_number=1
     )
 
 
-def test_get_artifact_success(tmp_path):
-    artifact_source_path = test_data_path.joinpath("size-deltas-reports-new")
+@pytest.mark.parametrize("artifacts_testdata", ["multiple-artifacts", "single-artifact"])
+def test_get_artifacts_success(tmp_path, artifacts_testdata):
+    artifacts_data = []
 
-    # Create temporary folder
+    # Create archive files
+    artifacts_source_path = test_data_path.joinpath("test_get_artifacts", artifacts_testdata)
     artifact_destination_path = tmp_path.joinpath("url_path")
     artifact_destination_path.mkdir()
-    real_artifact_name = "correct-artifact-name"
-    artifact_archive_destination_path = artifact_destination_path.joinpath(real_artifact_name + ".zip")
+    for artifact_source_path in artifacts_source_path.iterdir():
+        artifact_name = artifact_source_path.name
+        artifact_archive_destination_path = artifact_destination_path.joinpath(artifact_name + ".zip")
+        with zipfile.ZipFile(file=artifact_archive_destination_path, mode="a") as zip_ref:
+            for artifact_file in artifact_source_path.rglob("*"):
+                zip_ref.write(filename=artifact_file, arcname=artifact_file.relative_to(artifact_source_path))
 
-    artifact_data = {
-        "archive_download_url": artifact_destination_path.joinpath(real_artifact_name + ".zip").as_uri(),
-        "name": "artifact_name",
-    }
-
-    # Create an archive file
-    with zipfile.ZipFile(file=artifact_archive_destination_path, mode="a") as zip_ref:
-        for artifact_file in artifact_source_path.rglob("*"):
-            zip_ref.write(filename=artifact_file, arcname=artifact_file.relative_to(artifact_source_path))
+        artifacts_data.append(
+            {
+                "archive_download_url": artifact_destination_path.joinpath(artifact_name + ".zip").as_uri(),
+                "name": artifact_name,
+            }
+        )
 
     report_size_deltas = get_reportsizedeltas_object()
 
-    artifact_folder_object = report_size_deltas.get_artifact(artifact_data=artifact_data)
+    artifacts_folder_object = report_size_deltas.get_artifacts(artifacts_data=artifacts_data)
 
-    with artifact_folder_object as artifact_folder:
+    with artifacts_folder_object as artifacts_folder:
         # Verify that the artifact matches the source
-        assert directories_are_same(left_directory=artifact_source_path, right_directory=artifact_folder)
+        assert directories_are_same(
+            left_directory=artifacts_source_path, right_directory=pathlib.Path(artifacts_folder)
+        )
 
 
-def test_get_artifact_failure():
-    artifact_data = {
-        "archive_download_url": "http://httpstat.us/404",
-        "name": "artifact_name",
-    }
+def test_get_artifacts_failure():
+    artifacts_data = [
+        {
+            "archive_download_url": "http://httpstat.us/404",
+            "name": "artifact_name",
+        }
+    ]
 
     report_size_deltas = get_reportsizedeltas_object()
 
     with pytest.raises(expected_exception=urllib.error.URLError):
-        report_size_deltas.get_artifact(artifact_data=artifact_data)
+        report_size_deltas.get_artifacts(artifacts_data=artifacts_data)
 
 
 @pytest.mark.parametrize(
     "test_data_folder_name",
-    ["old-report-format", "new-report-format"],
+    ["old-report-format", "single-artifact", "multiple-artifacts", "artifact-contains-folder"],
 )
 def test_get_sketches_reports(test_data_folder_name):
     current_test_data_path = test_data_path.joinpath("test_get_sketches_reports", test_data_folder_name)
     report_size_deltas = get_reportsizedeltas_object()
 
-    artifact_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
+    artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
         distutils.dir_util.copy_tree(
-            src=str(current_test_data_path.joinpath("artifact")), dst=artifact_folder_object.name
+            src=str(current_test_data_path.joinpath("artifacts")), dst=artifacts_folder_object.name
         )
     except Exception:  # pragma: no cover
-        artifact_folder_object.cleanup()
+        artifacts_folder_object.cleanup()
         raise
-    sketches_reports = report_size_deltas.get_sketches_reports(artifact_folder_object=artifact_folder_object)
+    sketches_reports = report_size_deltas.get_sketches_reports(artifacts_folder_object=artifacts_folder_object)
 
     with open(file=current_test_data_path.joinpath("golden-sketches-reports.json")) as golden_sketches_reports_file:
         assert sketches_reports == json.load(golden_sketches_reports_file)
@@ -712,13 +728,13 @@ def test_generate_report():
 
     report_size_deltas = get_reportsizedeltas_object()
 
-    artifact_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
+    artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(src=str(sketches_report_path), dst=artifact_folder_object.name)
+        distutils.dir_util.copy_tree(src=str(sketches_report_path), dst=artifacts_folder_object.name)
     except Exception:  # pragma: no cover
-        artifact_folder_object.cleanup()
+        artifacts_folder_object.cleanup()
         raise
-    sketches_reports = report_size_deltas.get_sketches_reports(artifact_folder_object=artifact_folder_object)
+    sketches_reports = report_size_deltas.get_sketches_reports(artifacts_folder_object=artifacts_folder_object)
 
     report = report_size_deltas.generate_report(sketches_reports=sketches_reports)
     assert report == expected_deltas_report
