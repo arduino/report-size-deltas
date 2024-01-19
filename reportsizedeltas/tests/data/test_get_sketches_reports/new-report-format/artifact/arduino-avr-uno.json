@@ -1,0 +1,117 @@
+{
+  "commit_hash": "d8fd302",
+  "commit_url": "https://example.com/foo",
+  "boards": [
+    {
+      "board": "arduino:avr:uno",
+      "sketches": [
+        {
+          "name": "examples/Bar",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": 32256,
+              "current": {
+                "absolute": 1460,
+                "relative": 4.53
+              },
+              "previous": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              },
+              "delta": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": 2048,
+              "current": {
+                "absolute": 190,
+                "relative": 9.28
+              },
+              "previous": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              },
+              "delta": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
+            }
+          ]
+        },
+        {
+          "name": "examples/Foo",
+          "compilation_success": true,
+          "sizes": [
+            {
+              "name": "flash",
+              "maximum": 32256,
+              "current": {
+                "absolute": 444,
+                "relative": 1.38
+              },
+              "previous": {
+                "absolute": 1438,
+                "relative": 4.46
+              },
+              "delta": {
+                "absolute": -994,
+                "relative": -3.08
+              }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": 2048,
+              "current": {
+                "absolute": 9,
+                "relative": 0.44
+              },
+              "previous": {
+                "absolute": 184,
+                "relative": 8.98
+              },
+              "delta": {
+                "absolute": -175,
+                "relative": -8.54
+              }
+            }
+          ]
+        }
+      ],
+      "sizes": [
+        {
+          "name": "flash",
+          "maximum": 32256,
+          "delta": {
+            "absolute": {
+              "minimum": -994,
+              "maximum": -994
+            },
+            "relative": {
+              "minimum": -3.08,
+              "maximum": -3.08
+            }
+          }
+        },
+        {
+          "name": "RAM for global variables",
+          "maximum": 2048,
+          "delta": {
+            "absolute": {
+              "minimum": -175,
+              "maximum": -175
+            },
+            "relative": {
+              "minimum": -8.54,
+              "maximum": -8.54
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
