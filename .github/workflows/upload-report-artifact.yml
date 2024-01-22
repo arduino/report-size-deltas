@@ -22,9 +22,11 @@ jobs:
         parameters:
           # Coverage for pre-actions/upload-artifact@v4 approach where all reports are stored in a single artifact.
           - artifact-name-suffix: multi
+            artifact-version: 1
             reports-folder: multi-report-artifact
           # Coverage for actions/upload-artifact@v4 approach where each report is stored in a separate artifact.
           - artifact-name-suffix: arduino-samd-mkrzero
+            artifact-version: 2
             reports-folder: per-report-artifact
 
     steps:
@@ -45,8 +47,19 @@ jobs:
             jq '.commit_hash = "${{ github.event.pull_request.head.sha }}"' "$reportFile" > "${SKETCHES_REPORTS_PATH}/$reportFile"
           done
 
-      - name: Save sketches report as workflow artifact
+      - name: Save sketches report as v1 format workflow artifact
+        if: matrix.parameters.artifact-version == '1'
+        # actions/upload-artifact 3.x is the last version to produce v1 format artifacts:
+        # https://github.com/actions/upload-artifact/blob/main/README.md#v4---whats-new
         uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          path: ${{ env.SKETCHES_REPORTS_PATH }}
+          name: ${{ env.ARTIFACT_NAME_PREFIX }}${{ matrix.parameters.artifact-name-suffix }}
+
+      - name: Save sketches report as v2 format workflow artifact
+        if: matrix.parameters.artifact-version == '2'
+        uses: actions/upload-artifact@v4
         with:
           if-no-files-found: error
           path: ${{ env.SKETCHES_REPORTS_PATH }}
