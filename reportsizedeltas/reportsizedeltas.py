@@ -60,7 +60,7 @@ class ReportSizeDeltas:
 
     Keyword arguments:
     repository_name -- repository owner and name e.g., octocat/Hello-World
-    artifact_name -- name of the workflow artifact that contains the memory usage data
+    artifact_name -- regular expression for the names of the workflow artifacts that contain the memory usage data
     token -- GitHub access token
     """
 
@@ -104,7 +104,7 @@ class ReportSizeDeltas:
     def report_size_deltas_from_local_reports(self) -> None:
         """Comment a report of memory usage change to the pull request."""
         sketches_reports_folder = pathlib.Path(os.environ["GITHUB_WORKSPACE"], self.sketches_reports_source)
-        sketches_reports = self.get_sketches_reports(artifact_folder_object=sketches_reports_folder)
+        sketches_reports = self.get_sketches_reports(artifacts_folder_object=sketches_reports_folder)
 
         if sketches_reports:
             report = self.generate_report(sketches_reports=sketches_reports)
@@ -140,17 +140,17 @@ class ReportSizeDeltas:
                     print("::debug::Report already exists")
                     continue
 
-                artifact_download_url = self.get_artifact_download_url_for_sha(
+                artifacts_data = self.get_artifacts_data_for_sha(
                     pr_user_login=pr_data["user"]["login"], pr_head_ref=pr_data["head"]["ref"], pr_head_sha=pr_head_sha
                 )
-                if artifact_download_url is None:
+                if artifacts_data is None:
                     # Go on to the next PR
                     print("::debug::No sketches report artifact found")
                     continue
 
-                artifact_folder_object = self.get_artifact(artifact_download_url=artifact_download_url)
+                artifact_folder_object = self.get_artifacts(artifacts_data=artifacts_data)
 
-                sketches_reports = self.get_sketches_reports(artifact_folder_object=artifact_folder_object)
+                sketches_reports = self.get_sketches_reports(artifacts_folder_object=artifact_folder_object)
 
                 if sketches_reports:
                     if sketches_reports[0][self.ReportKeys.commit_hash] != pr_head_sha:
@@ -195,8 +195,8 @@ class ReportSizeDeltas:
         # No reports found for the PR's head SHA
         return False
 
-    def get_artifact_download_url_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str) -> str | None:
-        """Return the report artifact download URL associated with the given head commit hash.
+    def get_artifacts_data_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str):
+        """Return the list of data objects for the report artifacts associated with the given head commit hash.
 
         Keyword arguments:
         pr_user_login -- user name of the PR author (used to reduce number of GitHub API requests)
@@ -221,10 +221,10 @@ class ReportSizeDeltas:
             # Find the runs with the head SHA of the PR (there may be multiple runs)
             for run_data in runs_data["workflow_runs"]:
                 if run_data["head_sha"] == pr_head_sha:
-                    # Check if this run has the artifact we're looking for
-                    artifact_download_url = self.get_artifact_download_url_for_run(run_id=run_data["id"])
-                    if artifact_download_url is not None:
-                        return artifact_download_url
+                    # Check if this run has the artifacts we're looking for
+                    artifacts_data = self.get_artifacts_data_for_run(run_id=run_data["id"])
+                    if artifacts_data is not None:
+                        return artifacts_data
 
             page_number += 1
             page_count = api_data["page_count"]
@@ -232,12 +232,14 @@ class ReportSizeDeltas:
         # No matching artifact found
         return None
 
-    def get_artifact_download_url_for_run(self, run_id: str) -> str | None:
-        """Return the report artifact download URL associated with the given GitHub Actions workflow run.
+    def get_artifacts_data_for_run(self, run_id: str):
+        """Return the list of data objects for the artifacts associated with the given GitHub Actions workflow run.
 
         Keyword arguments:
         run_id -- GitHub Actions workflow run ID
         """
+        report_artifacts_data = []
+
         # Get the workflow run's artifacts
         page_number = 1
         page_count = 1
@@ -249,57 +251,70 @@ class ReportSizeDeltas:
             artifacts_data = api_data["json_data"]
 
             for artifact_data in artifacts_data["artifacts"]:
-                # The artifact is identified by a specific name
-                if not artifact_data["expired"] and artifact_data["name"] == self.sketches_reports_source:
-                    return artifact_data["archive_download_url"]
+                # The artifacts are identified by name matching a pattern
+                if not artifact_data["expired"] and re.match(
+                    pattern=self.sketches_reports_source, string=artifact_data["name"]
+                ):
+                    print("::debug::Found report artifact:", artifact_data["name"])
+                    report_artifacts_data.append(artifact_data)
 
             page_number += 1
             page_count = api_data["page_count"]
 
-        # No matching artifact found
-        return None
+        if len(report_artifacts_data) > 0:
+            return report_artifacts_data
+        else:
+            # No matching artifact found
+            return None
 
-    def get_artifact(self, artifact_download_url: str):
-        """Download and unzip the artifact and return an object for the temporary directory containing it.
+    def get_artifacts(self, artifacts_data):
+        """Download and unzip the artifacts and return an object for the temporary directory containing them.
 
         Keyword arguments:
-        artifact_download_url -- URL to download the artifact from GitHub
+        artifact_data -- data object for the artifact
         """
         # Create temporary folder
-        artifact_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
-        try:
-            # Download artifact
-            with open(
-                file=artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip", mode="wb"
-            ) as out_file:
-                with self.raw_http_request(url=artifact_download_url) as fp:
-                    out_file.write(fp.read())
+        artifacts_folder_object = tempfile.TemporaryDirectory(prefix="reportsizedeltas-")
+        artifacts_folder_path = pathlib.Path(artifacts_folder_object.name)
+        for artifact_data in artifacts_data:
+            try:
+                print("::debug::Downloading artifact:", artifact_data["name"])
+                artifact_folder_path = artifacts_folder_path.joinpath(artifact_data["name"])
+                artifact_folder_path.mkdir()
+                artifact_zip_file_path = artifact_folder_path.joinpath(artifact_data["name"] + ".zip")
+                # Download artifact
+                with artifact_zip_file_path.open(mode="wb") as out_file:
+                    with self.raw_http_request(url=artifact_data["archive_download_url"]) as fp:
+                        out_file.write(fp.read())
 
-            # Unzip artifact
-            artifact_zip_file = artifact_folder_object.name + "/" + self.sketches_reports_source + ".zip"
-            with zipfile.ZipFile(file=artifact_zip_file, mode="r") as zip_ref:
-                zip_ref.extractall(path=artifact_folder_object.name)
-            os.remove(artifact_zip_file)
+                # Unzip artifact
+                with zipfile.ZipFile(file=artifact_zip_file_path, mode="r") as zip_ref:
+                    zip_ref.extractall(path=artifact_folder_path)
+                artifact_zip_file_path.unlink()
 
-            return artifact_folder_object
+            except Exception:
+                artifacts_folder_object.cleanup()
+                raise
 
-        except Exception:
-            artifact_folder_object.cleanup()
-            raise
+        return artifacts_folder_object
 
-    def get_sketches_reports(self, artifact_folder_object):
+    def get_sketches_reports(self, artifacts_folder_object):
         """Parse the artifact files and return a list containing the data.
 
         Keyword arguments:
-        artifact_folder_object -- object containing the data about the temporary folder that stores the Markdown files
+        artifacts_folder_object -- object containing the data about the temporary folder that stores the Markdown files
         """
-        with artifact_folder_object as artifact_folder:
+        with artifacts_folder_object as artifacts_folder:
             # artifact_folder will be a string when running in non-local report mode
-            artifact_folder = pathlib.Path(artifact_folder)
+            artifacts_folder = pathlib.Path(artifacts_folder)
             sketches_reports = []
-            for report_filename in sorted(artifact_folder.iterdir()):
+            for report_filename in sorted(artifacts_folder.rglob(pattern="*.json")):
+                if report_filename.is_dir():
+                    # pathlib.Path.rglob returns matching folders in addition to files
+                    continue
+
                 # Combine sketches reports into an array
-                with open(file=report_filename.joinpath(report_filename)) as report_file:
+                with open(file=report_filename) as report_file:
                     report_data = json.load(report_file)
                     if (
                         (self.ReportKeys.boards not in report_data)

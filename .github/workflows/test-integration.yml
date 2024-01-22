@@ -28,6 +28,13 @@ jobs:
     permissions:
       pull-requests: write
 
+    strategy:
+      fail-fast: false
+      matrix:
+        test-data:
+          - multiple-folders
+          - single-folder
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -46,7 +53,7 @@ jobs:
             github.triggering_actor == 'dependabot[bot]'
           }}
         with:
-          sketches-reports-source: .github/workflows/testdata/sketches-reports
+          sketches-reports-source: .github/workflows/testdata/local-source/${{ matrix.test-data }}
 
   artifact-source:
     if: github.event_name != 'pull_request'
@@ -65,3 +72,5 @@ jobs:
         continue-on-error: ${{ github.triggering_actor == 'dependabot[bot]' }}
         # Use arduino/report-size-deltas action from local path
         uses: ./
+        with:
+          sketches-reports-source: ^sketches-report-.+

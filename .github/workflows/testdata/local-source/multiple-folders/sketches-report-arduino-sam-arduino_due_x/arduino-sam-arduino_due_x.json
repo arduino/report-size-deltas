@@ -1,9 +1,9 @@
 {
-  "commit_hash": "651f05f4d4aca30ac359e972c01568f873112d43",
+  "commit_hash": "0123456789abcdef0123456789abcdef01234567",
   "commit_url": "https://github.com/per1234/generate-size-deltas-report/commit/651f05f4d4aca30ac359e972c01568f873112d43",
   "boards": [
     {
-      "board": "arduino:samd:mkrzero",
+      "board": "arduino:sam:arduino_due_x",
       "sketches": [
         {
           "name": "examples/MIDIUSB_clock",
@@ -11,43 +11,43 @@
           "sizes": [
             {
               "name": "flash",
-              "maximum": 262144,
+              "maximum": 524288,
               "current": {
-                "absolute": 11976,
-                "relative": 4.57
+                "absolute": 11792,
+                "relative": 2.25
               },
               "previous": {
-                "absolute": 11892,
-                "relative": 4.54
-              },
-              "delta": {
-                "absolute": 84,
-                "relative": 0.03
-              }
-            },
-            {
-              "name": "RAM for global variables",
-              "maximum": 32768,
-              "current": {
-                "absolute": 2300,
-                "relative": 7.02
-              },
-              "previous": {
-                "absolute": 2300,
-                "relative": 7.02
+                "absolute": 11792,
+                "relative": 2.25
               },
               "delta": {
                 "absolute": 0,
                 "relative": 0.0
               }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": "N/A",
+              "current": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              },
+              "previous": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              },
+              "delta": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
             }
           ],
           "warnings": {
             "current": {
-              "absolute": 3
+              "absolute": 5
             },
             "previous": {
-              "absolute": 3
+              "absolute": 5
             },
             "delta": {
               "absolute": 0
@@ -60,14 +60,14 @@
           "sizes": [
             {
               "name": "flash",
-              "maximum": 262144,
+              "maximum": 524288,
               "current": {
-                "absolute": 11784,
-                "relative": 4.5
+                "absolute": 11640,
+                "relative": 2.22
               },
               "previous": {
-                "absolute": 11784,
-                "relative": 4.5
+                "absolute": 11640,
+                "relative": 2.22
               },
               "delta": {
                 "absolute": 0,
@@ -76,27 +76,27 @@
             },
             {
               "name": "RAM for global variables",
-              "maximum": 32768,
+              "maximum": "N/A",
               "current": {
-                "absolute": 2296,
-                "relative": 7.01
+                "absolute": "N/A",
+                "relative": "N/A"
               },
               "previous": {
-                "absolute": 2296,
-                "relative": 7.01
+                "absolute": "N/A",
+                "relative": "N/A"
               },
               "delta": {
-                "absolute": 0,
-                "relative": 0.0
+                "absolute": "N/A",
+                "relative": "N/A"
               }
             }
           ],
           "warnings": {
             "current": {
-              "absolute": 4
+              "absolute": 6
             },
             "previous": {
-              "absolute": 4
+              "absolute": 6
             },
             "delta": {
               "absolute": 0
@@ -109,43 +109,43 @@
           "sizes": [
             {
               "name": "flash",
-              "maximum": 262144,
+              "maximum": 524288,
               "current": {
-                "absolute": 11940,
-                "relative": 4.55
+                "absolute": 11808,
+                "relative": 2.25
               },
               "previous": {
-                "absolute": 11968,
-                "relative": 4.57
-              },
-              "delta": {
-                "absolute": -28,
-                "relative": -0.01
-              }
-            },
-            {
-              "name": "RAM for global variables",
-              "maximum": 32768,
-              "current": {
-                "absolute": 2296,
-                "relative": 7.01
-              },
-              "previous": {
-                "absolute": 2296,
-                "relative": 7.01
+                "absolute": 11808,
+                "relative": 2.25
               },
               "delta": {
                 "absolute": 0,
                 "relative": 0.0
               }
+            },
+            {
+              "name": "RAM for global variables",
+              "maximum": "N/A",
+              "current": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              },
+              "previous": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              },
+              "delta": {
+                "absolute": "N/A",
+                "relative": "N/A"
+              }
             }
           ],
           "warnings": {
             "current": {
-              "absolute": 4
+              "absolute": 6
             },
             "previous": {
-              "absolute": 4
+              "absolute": 6
             },
             "delta": {
               "absolute": 0
@@ -158,14 +158,14 @@
           "sizes": [
             {
               "name": "flash",
-              "maximum": 262144,
+              "maximum": 524288,
               "current": {
-                "absolute": 11808,
-                "relative": 4.5
+                "absolute": 11680,
+                "relative": 2.23
               },
               "previous": {
-                "absolute": 11808,
-                "relative": 4.5
+                "absolute": 11680,
+                "relative": 2.23
               },
               "delta": {
                 "absolute": 0,
@@ -174,27 +174,27 @@
             },
             {
               "name": "RAM for global variables",
-              "maximum": 32768,
+              "maximum": "N/A",
               "current": {
-                "absolute": 2064,
-                "relative": 6.3
+                "absolute": "N/A",
+                "relative": "N/A"
               },
               "previous": {
-                "absolute": 2032,
-                "relative": 6.2
+                "absolute": "N/A",
+                "relative": "N/A"
               },
               "delta": {
-                "absolute": 32,
-                "relative": 0.1
+                "absolute": "N/A",
+                "relative": "N/A"
               }
             }
           ],
           "warnings": {
             "current": {
-              "absolute": 4
+              "absolute": 6
             },
             "previous": {
-              "absolute": 4
+              "absolute": 6
             },
             "delta": {
               "absolute": 0
@@ -205,29 +205,29 @@
       "sizes": [
         {
           "name": "flash",
-          "maximum": 262144,
+          "maximum": 524288,
           "delta": {
             "absolute": {
-              "minimum": -28,
-              "maximum": 84
+              "minimum": 0,
+              "maximum": 0
             },
             "relative": {
-              "minimum": -0.01,
-              "maximum": 0.03
+              "minimum": 0.0,
+              "maximum": 0.0
             }
           }
         },
         {
           "name": "RAM for global variables",
-          "maximum": 32768,
+          "maximum": "N/A",
           "delta": {
             "absolute": {
-              "minimum": 0,
-              "maximum": 32
+              "minimum": "N/A",
+              "maximum": "N/A"
             },
             "relative": {
-              "minimum": 0.0,
-              "maximum": 0.1
+              "minimum": "N/A",
+              "maximum": "N/A"
             }
           }
         }
