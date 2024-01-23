@@ -630,19 +630,26 @@ class ReportSizeDeltas:
         request = urllib.request.Request(url=url, headers=headers, data=data)
 
         retry_count = 0
-        while retry_count <= maximum_urlopen_retries:
-            retry_count += 1
+        while True:
             try:
                 # The rate limit API is not subject to rate limiting
                 if url.startswith("https://api.github.com") and not url.startswith("https://api.github.com/rate_limit"):
                     self.handle_rate_limiting()
                 return urllib.request.urlopen(url=request)
             except urllib.error.HTTPError as exception:
-                if not determine_urlopen_retry(exception=exception):
-                    raise exception
+                if determine_urlopen_retry(exception=exception):
+                    if retry_count < maximum_urlopen_retries:
+                        retry_count += 1
+                        continue
+                    else:
+                        # Maximum retries reached without successfully opening URL
+                        print("Maximum number of URL load retries exceeded")
 
-        # Maximum retries reached without successfully opening URL
-        raise TimeoutError("Maximum number of URL load retries exceeded")
+                print(f"::error::{exception.__class__.__name__}: {exception}")
+                for line in exception.fp:
+                    print(line.decode(encoding="utf-8", errors="ignore"))
+
+                raise exception
 
     def handle_rate_limiting(self) -> None:
         """Check whether the GitHub API request limit has been reached.

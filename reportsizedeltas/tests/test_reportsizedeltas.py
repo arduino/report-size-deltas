@@ -910,7 +910,7 @@ def test_raw_http_request(mocker):
 
     # urllib.request.urlopen() has potentially recoverable exceptions, but exceeds retry count
     reportsizedeltas.determine_urlopen_retry.return_value = True
-    with pytest.raises(expected_exception=TimeoutError):
+    with pytest.raises(expected_exception=urllib.error.HTTPError):
         report_size_deltas.raw_http_request(url=url, data=data)
 
 
