@@ -637,7 +637,7 @@ class ReportSizeDeltas:
                 if url.startswith("https://api.github.com") and not url.startswith("https://api.github.com/rate_limit"):
                     self.handle_rate_limiting()
                 return urllib.request.urlopen(url=request)
-            except Exception as exception:
+            except urllib.error.HTTPError as exception:
                 if not determine_urlopen_retry(exception=exception):
                     raise exception
 
@@ -664,7 +664,7 @@ class ReportSizeDeltas:
             sys.exit(0)
 
 
-def determine_urlopen_retry(exception) -> bool:
+def determine_urlopen_retry(exception: urllib.error.HTTPError) -> bool:
     """Determine whether the exception warrants another attempt at opening the URL.
     If so, delay then return True. Otherwise, return False.
 

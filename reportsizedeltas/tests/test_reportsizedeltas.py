@@ -901,9 +901,11 @@ def test_raw_http_request(mocker):
     urllib.request.urlopen.assert_called_once_with(url=request)
 
     # urllib.request.urlopen() has non-recoverable exception
-    urllib.request.urlopen.side_effect = Exception()
+    urllib.request.urlopen.side_effect = urllib.error.HTTPError(
+        url="http://example.com", code=404, msg="", hdrs=None, fp=None
+    )
     mocker.patch("reportsizedeltas.determine_urlopen_retry", autospec=True, return_value=False)
-    with pytest.raises(expected_exception=Exception):
+    with pytest.raises(expected_exception=urllib.error.HTTPError):
         report_size_deltas.raw_http_request(url=url, data=data)
 
     # urllib.request.urlopen() has potentially recoverable exceptions, but exceeds retry count
