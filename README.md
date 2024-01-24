@@ -29,6 +29,7 @@ This action comments on the pull request with a report on the resulting change i
 - [Example usage](#example-usage)
   - [Scheduled workflow](#scheduled-workflow)
   - [Workflow triggered by `pull_request` event](#workflow-triggered-by-pull_request-event)
+- [Additional resources](#additional-resources)
 
 <!-- tocstop -->
 
@@ -97,58 +98,44 @@ jobs:
       - uses: arduino/compile-sketches@v1
         with:
           enable-deltas-report: true
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: sketches-reports
           path: sketches-reports
 ```
 
+---
+
+**ⓘ** A more advanced example is available in [the **FAQ**](docs/FAQ.md#size-deltas-report-workflow-triggered-by-schedule-event).
+
+---
+
 ### Workflow triggered by `pull_request` event
 
 ```yaml
 on: [push, pull_request]
-env:
-  # It's convenient to set variables for values used multiple times in the workflow
-  SKETCHES_REPORTS_PATH: sketches-reports
-  SKETCHES_REPORTS_ARTIFACT_NAME: sketches-reports
 jobs:
   compile:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        fqbn:
-          - "arduino:avr:uno"
-          - "arduino:samd:mkrzero"
     steps:
       - uses: actions/checkout@v4
-
       - uses: arduino/compile-sketches@v1
         with:
-          fqbn: ${{ matrix.fqbn }}
           enable-deltas-report: true
-          sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
-
-      # This step is needed to pass the size data to the report job
-      - name: Upload sketches report to workflow artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
-          path: ${{ env.SKETCHES_REPORTS_PATH }}
-
-  # When using a matrix to compile for multiple boards, it's necessary to use a separate job for the deltas report
-  report:
-    needs: compile # Wait for the compile job to finish to get the data for the report
-    if: github.event_name == 'pull_request' # Only run the job when the workflow is triggered by a pull request
-    runs-on: ubuntu-latest
-    steps:
-      # This step is needed to get the size data produced by the compile jobs
-      - name: Download sketches reports artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
-          path: ${{ env.SKETCHES_REPORTS_PATH }}
-
       - uses: arduino/report-size-deltas@v1
-        with:
-          sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
+        # Only run the action when the workflow is triggered by a pull request.
+        if: github.event_name == 'pull_request'
 ```
+
+---
+
+**ⓘ** A more advanced example is available in [the **FAQ**](docs/FAQ.md#workflow-triggered-by-pull_request-event).
+
+---
+
+## Additional resources
+
+- [Introductory article about **arduino/report-size-deltas**](https://blog.arduino.cc/2021/04/09/test-your-arduino-projects-with-github-actions/)
+- [Frequently asked questions about **arduino/report-size-deltas**](docs/FAQ.md#frequently-asked-questions)
+- [**GitHub Actions** documentation](https://docs.github.com/actions/learn-github-actions/understanding-github-actions)
+- [Discuss or request assistance on **Arduino Forum**](https://forum.arduino.cc/)
