@@ -98,7 +98,7 @@ jobs:
       - uses: arduino/compile-sketches@v1
         with:
           enable-deltas-report: true
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: sketches-reports
           path: sketches-reports
@@ -111,29 +111,30 @@ on: [push, pull_request]
 env:
   # It's convenient to set variables for values used multiple times in the workflow
   SKETCHES_REPORTS_PATH: sketches-reports
-  SKETCHES_REPORTS_ARTIFACT_NAME: sketches-reports
 jobs:
   compile:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        fqbn:
-          - "arduino:avr:uno"
-          - "arduino:samd:mkrzero"
+        board:
+          - fqbn: arduino:avr:uno
+            artifact-name-suffix: arduino-avr-uno
+          - fqbn: arduino:samd:mkrzero
+            artifact-name-suffix: arduino-samd-mkrzero
     steps:
       - uses: actions/checkout@v4
 
       - uses: arduino/compile-sketches@v1
         with:
-          fqbn: ${{ matrix.fqbn }}
+          fqbn: ${{ matrix.board.fqbn }}
           enable-deltas-report: true
           sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
 
       # This step is needed to pass the size data to the report job
       - name: Upload sketches report to workflow artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
+          name: sketches-reports-${{ matrix.board.artifact-name-suffix }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
 
   # When using a matrix to compile for multiple boards, it's necessary to use a separate job for the deltas report
@@ -143,10 +144,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # This step is needed to get the size data produced by the compile jobs
-      - name: Download sketches reports artifact
-        uses: actions/download-artifact@v3
+      - name: Download sketches reports artifacts
+        uses: actions/download-artifact@v4
         with:
-          name: ${{ env.SKETCHES_REPORTS_ARTIFACT_NAME }}
           path: ${{ env.SKETCHES_REPORTS_PATH }}
 
       - uses: arduino/report-size-deltas@v1
