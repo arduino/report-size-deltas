@@ -876,7 +876,13 @@ def test_raw_http_request(mocker):
     token = "test_token"
     url = "https://api.github.com/repo/foo/bar"
     data = "test_data"
-    request = "test_request"
+
+    class Request:
+        def add_unredirected_header(self):
+            pass  # pragma: no cover
+
+    mocker.patch.object(Request, "add_unredirected_header")
+    request = Request()
     urlopen_return = unittest.mock.sentinel.urlopen_return
 
     report_size_deltas = get_reportsizedeltas_object(repository_name=user_name + "/FooRepositoryName", token=token)
@@ -889,13 +895,15 @@ def test_raw_http_request(mocker):
 
     urllib.request.Request.assert_called_once_with(
         url=url,
-        headers={
-            "Accept": "application/vnd.github+json",
-            "Authorization": "Bearer " + token,
-            "User-Agent": user_name,
-            "X-GitHub-Api-Version": "2022-11-28",
-        },
         data=data,
+    )
+    request.add_unredirected_header.assert_has_calls(
+        calls=[
+            unittest.mock.call(key="Accept", val="application/vnd.github+json"),
+            unittest.mock.call(key="Authorization", val="Bearer " + token),
+            unittest.mock.call(key="User-Agent", val=user_name),
+            unittest.mock.call(key="X-GitHub-Api-Version", val="2022-11-28"),
+        ]
     )
     # URL is subject to GitHub API rate limiting
     report_size_deltas.handle_rate_limiting.assert_called_once()
