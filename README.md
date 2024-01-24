@@ -114,51 +114,24 @@ jobs:
 
 ```yaml
 on: [push, pull_request]
-env:
-  # It's convenient to set variables for values used multiple times in the workflow
-  SKETCHES_REPORTS_PATH: sketches-reports
 jobs:
   compile:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        board:
-          - fqbn: arduino:avr:uno
-            artifact-name-suffix: arduino-avr-uno
-          - fqbn: arduino:samd:mkrzero
-            artifact-name-suffix: arduino-samd-mkrzero
     steps:
       - uses: actions/checkout@v4
-
       - uses: arduino/compile-sketches@v1
         with:
-          fqbn: ${{ matrix.board.fqbn }}
           enable-deltas-report: true
-          sketches-report-path: ${{ env.SKETCHES_REPORTS_PATH }}
-
-      # This step is needed to pass the size data to the report job
-      - name: Upload sketches report to workflow artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: sketches-reports-${{ matrix.board.artifact-name-suffix }}
-          path: ${{ env.SKETCHES_REPORTS_PATH }}
-
-  # When using a matrix to compile for multiple boards, it's necessary to use a separate job for the deltas report
-  report:
-    needs: compile # Wait for the compile job to finish to get the data for the report
-    if: github.event_name == 'pull_request' # Only run the job when the workflow is triggered by a pull request
-    runs-on: ubuntu-latest
-    steps:
-      # This step is needed to get the size data produced by the compile jobs
-      - name: Download sketches reports artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: ${{ env.SKETCHES_REPORTS_PATH }}
-
       - uses: arduino/report-size-deltas@v1
-        with:
-          sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
+        # Only run the action when the workflow is triggered by a pull request.
+        if: github.event_name == 'pull_request'
 ```
+
+---
+
+**ⓘ** A more advanced example is available in [the **FAQ**](docs/FAQ.md#workflow-triggered-by-pull_request-event).
+
+---
 
 ## Additional resources
 
