@@ -893,6 +893,7 @@ def test_raw_http_request(mocker):
             "Accept": "application/vnd.github+json",
             "Authorization": "Bearer " + token,
             "User-Agent": user_name,
+            "X-GitHub-Api-Version": "2022-11-28",
         },
         data=data,
     )
