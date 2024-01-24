@@ -891,7 +891,7 @@ def test_raw_http_request(mocker):
         url=url,
         headers={
             "Accept": "application/vnd.github+json",
-            "Authorization": "token " + token,
+            "Authorization": "Bearer " + token,
             "User-Agent": user_name,
         },
         data=data,

@@ -627,7 +627,7 @@ class ReportSizeDeltas:
 
         headers = {
             "Accept": "application/vnd.github+json",
-            "Authorization": "token " + self.token,
+            "Authorization": "Bearer " + self.token,
             # GitHub recommends using user name as User-Agent (https://developer.github.com/v3/#user-agent-required)
             "User-Agent": self.repository_name.split("/")[0],
         }
