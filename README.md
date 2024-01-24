@@ -104,6 +104,12 @@ jobs:
           path: sketches-reports
 ```
 
+---
+
+**ⓘ** A more advanced example is available in [the **FAQ**](docs/FAQ.md#size-deltas-report-workflow-triggered-by-schedule-event).
+
+---
+
 ### Workflow triggered by `pull_request` event
 
 ```yaml
@@ -157,5 +163,6 @@ jobs:
 ## Additional resources
 
 - [Introductory article about **arduino/report-size-deltas**](https://blog.arduino.cc/2021/04/09/test-your-arduino-projects-with-github-actions/)
+- [Frequently asked questions about **arduino/report-size-deltas**](docs/FAQ.md#frequently-asked-questions)
 - [**GitHub Actions** documentation](https://docs.github.com/actions/learn-github-actions/understanding-github-actions)
 - [Discuss or request assistance on **Arduino Forum**](https://forum.arduino.cc/)
