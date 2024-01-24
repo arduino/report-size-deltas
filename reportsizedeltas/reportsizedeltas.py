@@ -625,8 +625,13 @@ class ReportSizeDeltas:
 
         logger.info("Opening URL: " + url)
 
-        # GitHub recommends using user name as User-Agent (https://developer.github.com/v3/#user-agent-required)
-        headers = {"Authorization": "token " + self.token, "User-Agent": self.repository_name.split("/")[0]}
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": "Bearer " + self.token,
+            # GitHub recommends using user name as User-Agent (https://developer.github.com/v3/#user-agent-required)
+            "User-Agent": self.repository_name.split("/")[0],
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         request = urllib.request.Request(url=url, headers=headers, data=data)
 
         retry_count = 0

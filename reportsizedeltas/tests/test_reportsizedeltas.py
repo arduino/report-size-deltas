@@ -888,7 +888,14 @@ def test_raw_http_request(mocker):
     report_size_deltas.raw_http_request(url=url, data=data)
 
     urllib.request.Request.assert_called_once_with(
-        url=url, headers={"Authorization": "token " + token, "User-Agent": user_name}, data=data
+        url=url,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": "Bearer " + token,
+            "User-Agent": user_name,
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+        data=data,
     )
     # URL is subject to GitHub API rate limiting
     report_size_deltas.handle_rate_limiting.assert_called_once()
