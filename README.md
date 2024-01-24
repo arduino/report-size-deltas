@@ -29,6 +29,7 @@ This action comments on the pull request with a report on the resulting change i
 - [Example usage](#example-usage)
   - [Scheduled workflow](#scheduled-workflow)
   - [Workflow triggered by `pull_request` event](#workflow-triggered-by-pull_request-event)
+- [Additional resources](#additional-resources)
 
 <!-- tocstop -->
 
@@ -152,3 +153,9 @@ jobs:
         with:
           sketches-reports-source: ${{ env.SKETCHES_REPORTS_PATH }}
 ```
+
+## Additional resources
+
+- [Introductory article about **arduino/report-size-deltas**](https://blog.arduino.cc/2021/04/09/test-your-arduino-projects-with-github-actions/)
+- [**GitHub Actions** documentation](https://docs.github.com/actions/learn-github-actions/understanding-github-actions)
+- [Discuss or request assistance on **Arduino Forum**](https://forum.arduino.cc/)
