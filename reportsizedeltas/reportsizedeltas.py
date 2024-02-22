@@ -8,6 +8,7 @@ import re
 import sys
 import tempfile
 import time
+import typing
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -47,7 +48,7 @@ def set_verbosity(enable_verbosity: bool) -> None:
     # INFO: manually specified output and all higher log level output
     verbose_logging_level = logging.DEBUG
 
-    if type(enable_verbosity) is not bool:
+    if not isinstance(enable_verbosity, bool):
         raise TypeError
     if enable_verbosity:
         logger.setLevel(level=verbose_logging_level)
@@ -523,6 +524,43 @@ class ReportSizeDeltas:
 
         return value
 
+    def get_previous_comment(self, url: str) -> str | None:
+        """Get a previous comment to update.
+
+        Arguments:
+          url -- The URL used to traverse existing comments of a PR thread.
+                 To get the comment total, this str should be in the form:
+                     "{GITHUB_API_URL}/repos/{GITHUB_REPOSITORY}/issues/{PR_NUMBER}"
+        Returns:
+          - A URL str to use for PATCHing the latest applicable comment.
+          - None if no previous/applicable comments exist.
+        """
+        comment_url: str | None = None
+
+        pr_info = self.get_json_response(url)
+        comment_count = typing.cast(typing.Dict[str, int], pr_info["json_data"])["comments"]
+
+        comments_api_url = url + "/comments"
+        comments_response = self.get_json_response(url=comments_api_url)
+        while comment_count:
+            comments = typing.cast(
+                typing.List[typing.Dict[str, typing.Any]],
+                comments_response["json_data"],
+            )
+            for comment in comments:
+                if typing.cast(str, comment["body"]).startswith(self.report_key_beginning):
+                    if comment_url is not None:  # we have more than 1 old comment
+                        #  delete old comment
+                        self.http_request(url=comment_url, method="DELETE")
+
+                    # keep track of latest posted comment only
+                    comment_url = typing.cast(str, comment["url"])
+            comment_count -= len(comments)
+            next_page = comments_response["page"] + 1
+            comments_response = self.get_json_response(url=f"{comments_api_url}/?page={next_page}")
+
+        return comment_url
+
     def comment_report(self, pr_number: int, report_markdown: str) -> None:
         """Submit the report as a comment on the PR thread.
 
@@ -532,9 +570,13 @@ class ReportSizeDeltas:
         """
         print("::debug::Adding deltas report comment to pull request")
         report_data = json.dumps(obj={"body": report_markdown}).encode(encoding="utf-8")
-        url = "https://api.github.com/repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments"
+        url = f"https://api.github.com/repos/{self.repository_name}/issues/{pr_number}"
 
-        self.http_request(url=url, data=report_data)
+        comment_url = self.get_previous_comment(url)
+        url = comment_url or url + "/comments"
+        method = "PATCH" if comment_url else None
+
+        self.http_request(url=url, data=report_data, method=method)
 
     def api_request(self, request: str, request_parameters: str = "", page_number: int = 1):
         """Do a GitHub API request. Return a dictionary containing:
@@ -594,7 +636,7 @@ class ReportSizeDeltas:
         except Exception as exception:
             raise exception
 
-    def http_request(self, url: str, data: bytes | None = None):
+    def http_request(self, url: str, data: bytes | None = None, method: str | None = None):
         """Make a request and return a dictionary:
         read -- the response
         info -- headers
@@ -604,28 +646,32 @@ class ReportSizeDeltas:
         url -- the URL to load
         data -- data to pass with the request
                 (default value: None)
+        method -- the HTTP request method to use
+                  (default is None which means ``'GET' if data is None else 'POST'``).
         """
-        with self.raw_http_request(url=url, data=data) as response_object:
+        with self.raw_http_request(url=url, data=data, method=method) as response_object:
             return {
                 "body": response_object.read().decode(encoding="utf-8", errors="ignore"),
                 "headers": response_object.info(),
                 "url": response_object.geturl(),
             }
 
-    def raw_http_request(self, url: str, data: bytes | None = None):
+    def raw_http_request(self, url: str, data: bytes | None = None, method: str | None = None):
         """Make a request and return an object containing the response.
 
         Keyword arguments:
         url -- the URL to load
         data -- data to pass with the request
                 (default value: None)
+        method -- the HTTP request method to use
+                  (default is None which means ``'GET' if data is None else 'POST'``).
         """
         # Maximum times to retry opening the URL before giving up
         maximum_urlopen_retries = 3
 
         logger.info("Opening URL: " + url)
 
-        request = urllib.request.Request(url=url, data=data)
+        request = urllib.request.Request(url=url, data=data, method=method)
         request.add_unredirected_header(key="Accept", val="application/vnd.github+json")
         request.add_unredirected_header(key="Authorization", val="Bearer " + self.token)
         request.add_unredirected_header(key="User-Agent", val=self.repository_name.split("/")[0])

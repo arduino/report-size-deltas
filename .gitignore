@@ -2,3 +2,8 @@
 __pycache__/
 .coverage
 /coverage.xml
+.env/
+.venv/
+venv/
+env/
+.vscode/
