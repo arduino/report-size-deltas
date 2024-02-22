@@ -367,18 +367,47 @@ def test_report_exists():
 
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
 
-    json_data = [{"body": "foo123"}, {"body": report_size_deltas.report_key_beginning + pr_head_sha + "foo"}]
+    json_data = [
+        {"body": "foo123"},
+        {"body": report_size_deltas.report_key_beginning + pr_head_sha + "foo", "url": "some/url"},
+    ]
     report_size_deltas.api_request = unittest.mock.MagicMock(
         return_value={"json_data": json_data, "additional_pages": False, "page_count": 1}
     )
 
-    assert report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha=pr_head_sha)
+    assert json_data[1]["url"] == report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha=pr_head_sha)
 
     report_size_deltas.api_request.assert_called_once_with(
         request="repos/" + repository_name + "/issues/" + str(pr_number) + "/comments", page_number=1
     )
 
-    assert not report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf")
+    assert report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf") is None
+
+
+def test_delete_previous_comment():
+    pr_number = 42
+    repository_name = "test_user/test_repo"
+
+    report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
+
+    json_comments = json.loads((test_data_path / "test_delete_previous_comment" / "comments.json").read_bytes())
+
+    report_size_deltas.http_request = unittest.mock.Mock()
+    report_size_deltas.get_json_response = unittest.mock.Mock(
+        return_value={"json_data": json_comments, "page_count": 1},
+    )
+
+    comment_url = report_size_deltas.report_exists(pr_number=pr_number)
+    assert comment_url == json_comments[0]["url"]
+
+    for comment in json_comments[1:4]:
+        if comment["body"].startswith(report_size_deltas.report_key_beginning):
+            report_size_deltas.http_request.assert_any_call(url=comment["url"], method="DELETE")
+
+    # It would be nicer to assert that a call has not been made.
+    # Here, we just assert that only the last 3 out of 4 bot comments were deleted.
+    # Implicitly, this also means the non-bot comment (`json_comment[4]`) was not deleted.
+    assert report_size_deltas.http_request.call_count == 3
 
 
 def test_get_artifacts_data_for_sha():
@@ -787,37 +816,6 @@ def test_comment_report():
         data=report_data,
         method=None,
     )
-
-
-def test_get_previous_comment():
-    pr_number = 42
-    repository_name = "test_user/test_repo"
-    url = f"https://api.github.com/repos/{repository_name}/issues/{pr_number}"
-
-    report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
-
-    json_comments = json.loads((test_data_path / "test_get_previous_comment" / "comments.json").read_bytes())
-
-    def side_effect(url: str):
-        ret_val = {"page": 1}
-        if url.endswith("/comments"):
-            return {"json_data": json_comments, **ret_val}
-        return {"json_data": {"comments": len(json_comments)}, **ret_val}
-
-    report_size_deltas.http_request = unittest.mock.Mock()
-    report_size_deltas.get_json_response = unittest.mock.Mock(side_effect=side_effect)
-
-    comment_url = report_size_deltas.get_previous_comment(url=url)
-    assert comment_url == json_comments[3]["url"]
-
-    for comment in json_comments[:3]:
-        if comment["body"].startswith(report_size_deltas.report_key_beginning):
-            report_size_deltas.http_request.assert_any_call(url=comment["url"], method="DELETE")
-
-    # It would be nicer to assert that a call has not been made.
-    # Here, we just assert that the first 3 out of 4 bot comments were deleted.
-    # Implicitly, this also means the non-bot comment (`json_comment[4]`) was not deleted.
-    assert report_size_deltas.http_request.call_count == 3
 
 
 def test_api_request():
