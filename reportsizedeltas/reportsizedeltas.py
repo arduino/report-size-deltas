@@ -8,7 +8,6 @@ import re
 import sys
 import tempfile
 import time
-import typing
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -170,19 +169,32 @@ class ReportSizeDeltas:
             page_number += 1
             page_count = api_data["page_count"]
 
-    def report_exists(self, pr_number: int, pr_head_sha: str) -> bool:
+    def report_exists(self, pr_number: int, pr_head_sha: str = "") -> str | None:
         """Return whether a report has already been commented to the pull request thread for the latest workflow run.
 
-        Keyword arguments:
-        pr_number -- number of the pull request to check
-        pr_head_sha -- PR's head branch hash
+        If `pr_head_sha` is a blank str, then all thread comments are traversed. Additionally,
+        any report comment found will be deleted if it is not the first report comment found.
+        This is designed to support the action input `update-comment` when asserted.
+
+        If `pr_head_sha` is not a blank str, then thread comments are traversed
+        until a report comment that corresponds to the commit is found.
+        No comments are deleted in this scenario.
+
+        Arguments:
+          pr_number: number of the pull request to check
+          pr_head_sha: PR's head branch hash
+        Returns:
+          - A URL str to use for PATCHing the first applicable report comment.
+          - None if no applicable report comments exist.
         """
-        # Get the pull request's comments
+        comment_url: str | None = None
+        request_uri = f"repos/{self.repository_name}/issues/{pr_number}/comments"
         page_number = 1
         page_count = 1
         while page_number <= page_count:
+            # Get the pull request's comments
             api_data = self.api_request(
-                request="repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments",
+                request=request_uri,
                 page_number=page_number,
             )
 
@@ -190,13 +202,20 @@ class ReportSizeDeltas:
             for comment_data in comments_data:
                 # Check if the comment is a report for the PR's head SHA
                 if comment_data["body"].startswith(self.report_key_beginning + pr_head_sha):
-                    return True
+                    if pr_head_sha:
+                        return comment_data["url"]
+                    # else: pr_head_sha == ""
+                    if comment_url is None:
+                        comment_url = comment_data["url"]
+                    else:  # found another report
+                        # delete report comment if it is not the first report found
+                        self.http_request(url=comment_data["url"], method="DELETE")
 
             page_number += 1
             page_count = api_data["page_count"]
 
         # No reports found for the PR's head SHA
-        return False
+        return comment_url
 
     def get_artifacts_data_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str):
         """Return the list of data objects for the report artifacts associated with the given head commit hash.
@@ -526,43 +545,6 @@ class ReportSizeDeltas:
 
         return value
 
-    def get_previous_comment(self, url: str) -> str | None:
-        """Get a previous comment to update.
-
-        Arguments:
-          url -- The URL used to traverse existing comments of a PR thread.
-                 To get the comment total, this str should be in the form:
-                     "{GITHUB_API_URL}/repos/{GITHUB_REPOSITORY}/issues/{PR_NUMBER}"
-        Returns:
-          - A URL str to use for PATCHing the latest applicable comment.
-          - None if no previous/applicable comments exist.
-        """
-        comment_url: str | None = None
-
-        pr_info = self.get_json_response(url)
-        comment_count = typing.cast(typing.Dict[str, int], pr_info["json_data"])["comments"]
-
-        comments_api_url = url + "/comments"
-        comments_response = self.get_json_response(url=comments_api_url)
-        while comment_count:
-            comments = typing.cast(
-                typing.List[typing.Dict[str, typing.Any]],
-                comments_response["json_data"],
-            )
-            for comment in comments:
-                if typing.cast(str, comment["body"]).startswith(self.report_key_beginning):
-                    if comment_url is not None:  # we have more than 1 old comment
-                        #  delete old comment
-                        self.http_request(url=comment_url, method="DELETE")
-
-                    # keep track of latest posted comment only
-                    comment_url = typing.cast(str, comment["url"])
-            comment_count -= len(comments)
-            next_page = comments_response["page"] + 1
-            comments_response = self.get_json_response(url=f"{comments_api_url}/?page={next_page}")
-
-        return comment_url
-
     def comment_report(self, pr_number: int, report_markdown: str) -> None:
         """Submit the report as a comment on the PR thread.
 
@@ -572,13 +554,12 @@ class ReportSizeDeltas:
         """
         print("::debug::Adding deltas report comment to pull request")
         report_data = json.dumps(obj={"body": report_markdown}).encode(encoding="utf-8")
-        url = f"https://api.github.com/repos/{self.repository_name}/issues/{pr_number}"
+        url = "https://api.github.com/repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments"
 
-        comment_url = None if not self.update_comment else self.get_previous_comment(url)
-        url = comment_url or url + "/comments"
+        comment_url = None if not self.update_comment else self.report_exists(pr_number=pr_number)
         method = "PATCH" if comment_url else None
 
-        self.http_request(url=url, data=report_data, method=method)
+        self.http_request(url=comment_url or url, data=report_data, method=method)
 
     def api_request(self, request: str, request_parameters: str = "", page_number: int = 1):
         """Do a GitHub API request. Return a dictionary containing:
