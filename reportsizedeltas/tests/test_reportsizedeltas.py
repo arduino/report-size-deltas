@@ -1,4 +1,4 @@
-import distutils.dir_util
+import shutil
 import filecmp
 import json
 import os
@@ -526,8 +526,8 @@ def test_get_sketches_reports(test_data_folder_name):
 
     artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(
-            src=str(current_test_data_path.joinpath("artifacts")), dst=artifacts_folder_object.name
+        shutil.copytree(
+            src=str(current_test_data_path.joinpath("artifacts")), dst=artifacts_folder_object.name, dirs_exist_ok=True
         )
     except Exception:  # pragma: no cover
         artifacts_folder_object.cleanup()
@@ -730,7 +730,7 @@ def test_generate_report():
 
     artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(src=str(sketches_report_path), dst=artifacts_folder_object.name)
+        shutil.copytree(src=str(sketches_report_path), dst=artifacts_folder_object.name, dirs_exist_ok=True)
     except Exception:  # pragma: no cover
         artifacts_folder_object.cleanup()
         raise
@@ -768,6 +768,7 @@ def test_comment_report():
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
 
     report_size_deltas.http_request = unittest.mock.MagicMock()
+    report_size_deltas.get_previous_comment = unittest.mock.Mock(return_value=None)
 
     report_size_deltas.comment_report(pr_number=pr_number, report_markdown=report_markdown)
 
@@ -778,7 +779,39 @@ def test_comment_report():
     report_size_deltas.http_request.assert_called_once_with(
         url="https://api.github.com/repos/" + repository_name + "/issues/" + str(pr_number) + "/comments",
         data=report_data,
+        method=None,
     )
+
+
+def test_get_previous_comment():
+    pr_number = 42
+    repository_name = "test_user/test_repo"
+    url = f"https://api.github.com/repos/{repository_name}/issues/{pr_number}"
+
+    report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
+
+    json_comments = json.loads((test_data_path / "test_get_previous_comment" / "comments.json").read_bytes())
+
+    def side_effect(url: str):
+        ret_val = {"page": 1}
+        if url.endswith("/comments"):
+            return {"json_data": json_comments, **ret_val}
+        return {"json_data": {"comments": len(json_comments)}, **ret_val}
+
+    report_size_deltas.http_request = unittest.mock.Mock()
+    report_size_deltas.get_json_response = unittest.mock.Mock(side_effect=side_effect)
+
+    comment_url = report_size_deltas.get_previous_comment(url=url)
+    assert comment_url == json_comments[3]["url"]
+
+    for comment in json_comments[:3]:
+        if comment["body"].startswith(report_size_deltas.report_key_beginning):
+            report_size_deltas.http_request.assert_any_call(url=comment["url"], method="DELETE")
+
+    # It would be nicer to assert that a call has not been made.
+    # Here, we just assert that the first 3 out of 4 bot comments were deleted.
+    # Implicitly, this also means the non-bot comment (`json_comment[4]`) was not deleted.
+    assert report_size_deltas.http_request.call_count == 3
 
 
 def test_api_request():
@@ -868,7 +901,7 @@ def test_http_request():
 
     report_size_deltas.http_request(url=url, data=data)
 
-    report_size_deltas.raw_http_request.assert_called_once_with(url=url, data=data)
+    report_size_deltas.raw_http_request.assert_called_once_with(url=url, data=data, method=None)
 
 
 def test_raw_http_request(mocker):
@@ -896,6 +929,7 @@ def test_raw_http_request(mocker):
     urllib.request.Request.assert_called_once_with(
         url=url,
         data=data,
+        method=None,
     )
     request.add_unredirected_header.assert_has_calls(
         calls=[
