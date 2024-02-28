@@ -94,7 +94,7 @@ flowchart TB
   subgraph main[" "]
     direction TB
 
-    subgraph compileWorkflow["<b>Sketch compilation workflow run</b>"]
+    subgraph compileWorkflow["Sketch compilation workflow run"]
       direction TB
 
       unoJob["arduino:avr:uno<br />job"]
@@ -113,13 +113,13 @@ flowchart TB
       mkrzeroArtifact["sketches-reports-arduino-samd-mkrzero<br />artifact"]
     end
 
-    subgraph reportWorkflow["<b>Size deltas report workflow run</b>"]
+    subgraph reportWorkflow["Size deltas report workflow run"]
       direction TB
 
       reportAction["arduino/report-size-deltas<br />action"]
     end
 
-    subgraph pr["<b>Pull request</b>"]
+    subgraph pr["Pull request"]
       direction TB
 
       comment["Size deltas report<br />comment"]
