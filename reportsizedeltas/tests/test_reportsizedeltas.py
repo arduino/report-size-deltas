@@ -1,4 +1,4 @@
-import distutils.dir_util
+import shutil
 import filecmp
 import json
 import os
@@ -22,6 +22,7 @@ def get_reportsizedeltas_object(
     repository_name: str = "FooOwner/BarRepository",
     sketches_reports_source: str = "foo-artifact-pattern",
     token: str = "foo token",
+    update_comment: bool = False,
 ) -> reportsizedeltas.ReportSizeDeltas:
     """Return a reportsizedeltas.ReportSizeDeltas object to use in tests.
 
@@ -32,7 +33,10 @@ def get_reportsizedeltas_object(
     token -- GitHub access token
     """
     return reportsizedeltas.ReportSizeDeltas(
-        repository_name=repository_name, sketches_reports_source=sketches_reports_source, token=token
+        repository_name=repository_name,
+        sketches_reports_source=sketches_reports_source,
+        token=token,
+        update_comment=update_comment,
     )
 
 
@@ -106,10 +110,12 @@ def setup_environment_variables(monkeypatch):
         repository_name = "GoldenOwner/GoldenRepository"
         sketches_reports_source = "golden-source-pattern"
         token = "golden-github-token"
+        update_comment = "false"
 
     monkeypatch.setenv("GITHUB_REPOSITORY", ActionInputs.repository_name)
     monkeypatch.setenv("INPUT_SKETCHES-REPORTS-SOURCE", ActionInputs.sketches_reports_source)
     monkeypatch.setenv("INPUT_GITHUB-TOKEN", ActionInputs.token)
+    monkeypatch.setenv("INPUT_UPDATE-COMMENT", ActionInputs.token)
 
     return ActionInputs()
 
@@ -132,6 +138,7 @@ def test_main(monkeypatch, mocker, setup_environment_variables):
         repository_name=setup_environment_variables.repository_name,
         sketches_reports_source=setup_environment_variables.sketches_reports_source,
         token=setup_environment_variables.token,
+        update_comment=setup_environment_variables.update_comment == "true",
     )
     ReportSizeDeltas.report_size_deltas.assert_called_once()
 
@@ -360,18 +367,47 @@ def test_report_exists():
 
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
 
-    json_data = [{"body": "foo123"}, {"body": report_size_deltas.report_key_beginning + pr_head_sha + "foo"}]
+    json_data = [
+        {"body": "foo123"},
+        {"body": report_size_deltas.report_key_beginning + pr_head_sha + "foo", "url": "some/url"},
+    ]
     report_size_deltas.api_request = unittest.mock.MagicMock(
         return_value={"json_data": json_data, "additional_pages": False, "page_count": 1}
     )
 
-    assert report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha=pr_head_sha)
+    assert json_data[1]["url"] == report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha=pr_head_sha)
 
     report_size_deltas.api_request.assert_called_once_with(
         request="repos/" + repository_name + "/issues/" + str(pr_number) + "/comments", page_number=1
     )
 
-    assert not report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf")
+    assert report_size_deltas.report_exists(pr_number=pr_number, pr_head_sha="asdf") is None
+
+
+def test_delete_previous_comment():
+    pr_number = 42
+    repository_name = "test_user/test_repo"
+
+    report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
+
+    json_comments = json.loads((test_data_path / "test_delete_previous_comment" / "comments.json").read_bytes())
+
+    report_size_deltas.http_request = unittest.mock.Mock()
+    report_size_deltas.get_json_response = unittest.mock.Mock(
+        return_value={"json_data": json_comments, "page_count": 1},
+    )
+
+    comment_url = report_size_deltas.report_exists(pr_number=pr_number)
+    assert comment_url == json_comments[0]["url"]
+
+    for comment in json_comments[1:4]:
+        if comment["body"].startswith(report_size_deltas.report_key_beginning):
+            report_size_deltas.http_request.assert_any_call(url=comment["url"], method="DELETE")
+
+    # It would be nicer to assert that a call has not been made.
+    # Here, we just assert that only the last 3 out of 4 bot comments were deleted.
+    # Implicitly, this also means the non-bot comment (`json_comment[4]`) was not deleted.
+    assert report_size_deltas.http_request.call_count == 3
 
 
 def test_get_artifacts_data_for_sha():
@@ -526,8 +562,8 @@ def test_get_sketches_reports(test_data_folder_name):
 
     artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(
-            src=str(current_test_data_path.joinpath("artifacts")), dst=artifacts_folder_object.name
+        shutil.copytree(
+            src=str(current_test_data_path.joinpath("artifacts")), dst=artifacts_folder_object.name, dirs_exist_ok=True
         )
     except Exception:  # pragma: no cover
         artifacts_folder_object.cleanup()
@@ -730,7 +766,7 @@ def test_generate_report():
 
     artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(src=str(sketches_report_path), dst=artifacts_folder_object.name)
+        shutil.copytree(src=str(sketches_report_path), dst=artifacts_folder_object.name, dirs_exist_ok=True)
     except Exception:  # pragma: no cover
         artifacts_folder_object.cleanup()
         raise
@@ -778,6 +814,7 @@ def test_comment_report():
     report_size_deltas.http_request.assert_called_once_with(
         url="https://api.github.com/repos/" + repository_name + "/issues/" + str(pr_number) + "/comments",
         data=report_data,
+        method=None,
     )
 
 
@@ -868,7 +905,7 @@ def test_http_request():
 
     report_size_deltas.http_request(url=url, data=data)
 
-    report_size_deltas.raw_http_request.assert_called_once_with(url=url, data=data)
+    report_size_deltas.raw_http_request.assert_called_once_with(url=url, data=data, method=None)
 
 
 def test_raw_http_request(mocker):
@@ -896,6 +933,7 @@ def test_raw_http_request(mocker):
     urllib.request.Request.assert_called_once_with(
         url=url,
         data=data,
+        method=None,
     )
     request.add_unredirected_header.assert_has_calls(
         calls=[

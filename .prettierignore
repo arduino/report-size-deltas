@@ -4,3 +4,8 @@
 .licenses/
 __pycache__/
 node_modules/
+.env/
+.venv/
+env/
+venv/
+.mypy_cache/
