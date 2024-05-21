@@ -7,6 +7,9 @@ inputs:
   github-token:
     description: "GitHub access token used to comment the memory usage comparison results to the PR thread"
     default: ${{ github.token }}
+  update-comment:
+    description: "when posting a report, set this to true to only update the previous report (if one exists)"
+    default: false
 runs:
   using: "docker"
   image: "Dockerfile"

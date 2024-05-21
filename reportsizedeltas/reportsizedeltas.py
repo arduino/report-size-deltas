@@ -32,6 +32,7 @@ def main() -> None:
         repository_name=os.environ["GITHUB_REPOSITORY"],
         sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
         token=os.environ["INPUT_GITHUB-TOKEN"],
+        update_comment=os.environ["INPUT_UPDATE-COMMENT"] == "true",
     )
 
     report_size_deltas.report_size_deltas()
@@ -87,10 +88,11 @@ class ReportSizeDeltas:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name: str, sketches_reports_source: str, token: str) -> None:
+    def __init__(self, repository_name: str, sketches_reports_source: str, token: str, update_comment: bool) -> None:
         self.repository_name = repository_name
         self.sketches_reports_source = sketches_reports_source
         self.token = token
+        self.update_comment = update_comment
 
     def report_size_deltas(self) -> None:
         """Comment a report of memory usage change to pull request(s)."""
@@ -572,7 +574,7 @@ class ReportSizeDeltas:
         report_data = json.dumps(obj={"body": report_markdown}).encode(encoding="utf-8")
         url = f"https://api.github.com/repos/{self.repository_name}/issues/{pr_number}"
 
-        comment_url = self.get_previous_comment(url)
+        comment_url = None if not self.update_comment else self.get_previous_comment(url)
         url = comment_url or url + "/comments"
         method = "PATCH" if comment_url else None
 
