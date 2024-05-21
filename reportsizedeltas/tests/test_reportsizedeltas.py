@@ -22,6 +22,7 @@ def get_reportsizedeltas_object(
     repository_name: str = "FooOwner/BarRepository",
     sketches_reports_source: str = "foo-artifact-pattern",
     token: str = "foo token",
+    update_comment: bool = False,
 ) -> reportsizedeltas.ReportSizeDeltas:
     """Return a reportsizedeltas.ReportSizeDeltas object to use in tests.
 
@@ -32,7 +33,10 @@ def get_reportsizedeltas_object(
     token -- GitHub access token
     """
     return reportsizedeltas.ReportSizeDeltas(
-        repository_name=repository_name, sketches_reports_source=sketches_reports_source, token=token
+        repository_name=repository_name,
+        sketches_reports_source=sketches_reports_source,
+        token=token,
+        update_comment=update_comment,
     )
 
 
@@ -106,10 +110,12 @@ def setup_environment_variables(monkeypatch):
         repository_name = "GoldenOwner/GoldenRepository"
         sketches_reports_source = "golden-source-pattern"
         token = "golden-github-token"
+        update_comment = "false"
 
     monkeypatch.setenv("GITHUB_REPOSITORY", ActionInputs.repository_name)
     monkeypatch.setenv("INPUT_SKETCHES-REPORTS-SOURCE", ActionInputs.sketches_reports_source)
     monkeypatch.setenv("INPUT_GITHUB-TOKEN", ActionInputs.token)
+    monkeypatch.setenv("INPUT_UPDATE-COMMENT", ActionInputs.update_comment)
 
     return ActionInputs()
 
@@ -132,6 +138,7 @@ def test_main(monkeypatch, mocker, setup_environment_variables):
         repository_name=setup_environment_variables.repository_name,
         sketches_reports_source=setup_environment_variables.sketches_reports_source,
         token=setup_environment_variables.token,
+        update_comment=setup_environment_variables.update_comment == "true",
     )
     ReportSizeDeltas.report_size_deltas.assert_called_once()
 
@@ -768,7 +775,6 @@ def test_comment_report():
     report_size_deltas = get_reportsizedeltas_object(repository_name=repository_name)
 
     report_size_deltas.http_request = unittest.mock.MagicMock()
-    report_size_deltas.get_previous_comment = unittest.mock.Mock(return_value=None)
 
     report_size_deltas.comment_report(pr_number=pr_number, report_markdown=report_markdown)
 
