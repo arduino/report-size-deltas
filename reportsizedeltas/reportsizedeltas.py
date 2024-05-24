@@ -85,6 +85,7 @@ class ReportSizeDeltas:
         maximum = "maximum"
         sketches = "sketches"
         compilation_success = "compilation_success"
+        warnings = "warnings"
 
     def __init__(self, repository_name: str, sketches_reports_source: str, token: str) -> None:
         self.repository_name = repository_name
@@ -441,6 +442,15 @@ class ReportSizeDeltas:
                 report_data[row_number][column_number + 1] = self.get_summary_value(
                     show_emoji=False, minimum=self.not_applicable_indicator, maximum=self.not_applicable_indicator
                 )
+        if self.ReportKeys.warnings in fqbn_data:
+            column_number = get_report_column_number(report=report_data, column_heading="Warnings")
+            warnings_data = fqbn_data[self.ReportKeys.warnings]
+            deltas = warnings_data[self.ReportKeys.delta][self.ReportKeys.absolute]
+            report_data[row_number][column_number] = self.get_summary_value(
+                    show_emoji=True,
+                    minimum=deltas[self.ReportKeys.minimum],
+                    maximum=deltas[self.ReportKeys.maximum],
+                )
 
     def add_detailed_report_row(self, report_data, fqbn_data) -> None:
         """Add a row to the detailed report.
@@ -483,6 +493,19 @@ class ReportSizeDeltas:
 
                     # Relative
                     report_data[row_number][column_number + 1] = self.not_applicable_indicator
+
+            if self.ReportKeys.warnings in sketch:
+                warnings_data = sketch[self.ReportKeys.warnings]
+                column_number = get_report_column_number(
+                    report=report_data,
+                    column_heading="`{sketch_name}`<br>Warnings".format(sketch_name=sketch[self.ReportKeys.name])
+                    )
+                report_data[row_number][column_number] = warnings_data[self.ReportKeys.current][
+                    self.ReportKeys.absolute
+                ]
+                report_data[row_number][column_number + 1] = warnings_data[self.ReportKeys.delta][
+                    self.ReportKeys.absolute
+                ]
 
     def get_summary_value(self, show_emoji: bool, minimum, maximum) -> str:
         """Return the Markdown formatted text for a memory change data cell in the report table.
