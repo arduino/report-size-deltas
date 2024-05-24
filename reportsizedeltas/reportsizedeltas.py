@@ -415,7 +415,9 @@ class ReportSizeDeltas:
         # Populate the row with data
         for size_data in fqbn_data[self.ReportKeys.sizes]:
             # Determine column number for this memory type
-            column_number = get_report_column_number(report=report_data, column_heading=size_data[self.ReportKeys.name])
+            column_number = get_report_column_number(
+                report=report_data, column_heading=size_data[self.ReportKeys.name], extra_column_heading="%"
+            )
 
             # Add the memory data to the cell
             if self.ReportKeys.delta in size_data:
@@ -443,14 +445,16 @@ class ReportSizeDeltas:
                     show_emoji=False, minimum=self.not_applicable_indicator, maximum=self.not_applicable_indicator
                 )
         if self.ReportKeys.warnings in fqbn_data:
-            column_number = get_report_column_number(report=report_data, column_heading="Warnings")
+            column_number = get_report_column_number(
+                report=report_data, column_heading="Warnings<br>+/-", extra_column_heading=None
+            )
             warnings_data = fqbn_data[self.ReportKeys.warnings]
             deltas = warnings_data[self.ReportKeys.delta][self.ReportKeys.absolute]
             report_data[row_number][column_number] = self.get_summary_value(
-                    show_emoji=True,
-                    minimum=deltas[self.ReportKeys.minimum],
-                    maximum=deltas[self.ReportKeys.maximum],
-                )
+                show_emoji=True,
+                minimum=deltas[self.ReportKeys.minimum],
+                maximum=deltas[self.ReportKeys.maximum],
+            )
 
     def add_detailed_report_row(self, report_data, fqbn_data) -> None:
         """Add a row to the detailed report.
@@ -476,6 +480,7 @@ class ReportSizeDeltas:
                             sketch_name=sketch[self.ReportKeys.name], size_name=size_data[self.ReportKeys.name]
                         )
                     ),
+                    extra_column_heading="%",
                 )
 
                 # Add the memory data to the cell
@@ -498,12 +503,13 @@ class ReportSizeDeltas:
                 warnings_data = sketch[self.ReportKeys.warnings]
                 column_number = get_report_column_number(
                     report=report_data,
-                    column_heading="`{sketch_name}`<br>Warnings".format(sketch_name=sketch[self.ReportKeys.name])
-                    )
-                report_data[row_number][column_number] = warnings_data[self.ReportKeys.current][
-                    self.ReportKeys.absolute
-                ]
-                report_data[row_number][column_number + 1] = warnings_data[self.ReportKeys.delta][
+                    column_heading=(
+                        "`{sketch_name}`<br>Warnings<br>+/-".format(sketch_name=sketch[self.ReportKeys.name])
+                    ),
+                    extra_column_heading="Warnings<br>current",
+                )
+                report_data[row_number][column_number] = warnings_data[self.ReportKeys.delta][self.ReportKeys.absolute]
+                report_data[row_number][column_number + 1] = warnings_data[self.ReportKeys.current][
                     self.ReportKeys.absolute
                 ]
 
@@ -763,14 +769,13 @@ def get_page_count(link_header: str | None) -> int:
     return page_count
 
 
-def get_report_column_number(report, column_heading: str) -> int:
+def get_report_column_number(report, column_heading: str, extra_column_heading: str | None) -> int:
     """Return the column number of the given heading.
 
     Keyword arguments:
     column_heading -- the text of the column heading. If it doesn't exist, a column will be created with this heading.
+    extra_column_heading -- if not None, an additional column with this header (needs not be unique) will be created.
     """
-    relative_column_heading = "%"
-
     try:
         column_number = report[0].index(column_heading, 1)
     except ValueError:
@@ -783,11 +788,12 @@ def get_report_column_number(report, column_heading: str) -> int:
         # Expand the size of the final row (the current row) to match the new number of columns
         report[len(report) - 1].append("")
 
-        # Relative column
-        # Add the heading
-        report[0].append(relative_column_heading)
-        # Expand the size of the final row (the current row) to match the new number of columns
-        report[len(report) - 1].append("")
+        if extra_column_heading is not None:
+            # Extra column
+            # Add the heading
+            report[0].append(extra_column_heading)
+            # Expand the size of the final row (the current row) to match the new number of columns
+            report[len(report) - 1].append("")
 
     return column_number
 
