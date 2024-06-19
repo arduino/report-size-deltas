@@ -10,3 +10,4 @@ ignore = W503
 max-complexity = 10
 max-line-length = 120
 select = E,W,F,C,N
+exclude = .env,env,venv,.venv
