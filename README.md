@@ -11,7 +11,7 @@
 [![Spell Check status](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/spell-check-task.yml)
 [![Sync Labels status](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/sync-labels-npm.yml)
 [![Test Python status](https://github.com/arduino/report-size-deltas/actions/workflows/test-python-poetry-task.yml/badge.svg)](https://github.com/arduino/report-size-deltas/actions/workflows/test-python-poetry-task.yml)
-[![codecov](https://codecov.io/gh/arduino/report-size-deltas/branch/main/graph/badge.svg)](https://codecov.io/gh/arduino/report-size-deltas)
+[![codecov](https://codecov.io/gh/arduino/report-size-deltas/graph/badge.svg?token=RLXQ2ZNBlb)](https://codecov.io/gh/arduino/report-size-deltas)
 
 This action comments on the pull request with a report on the resulting change in memory usage of the [Arduino](https://www.arduino.cc/) sketches compiled by the [`arduino/compile-sketches`](https://github.com/arduino/compile-sketches) action. This should be run from a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule).
 
