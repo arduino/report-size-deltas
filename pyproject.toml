@@ -8,7 +8,7 @@ description = ""
 authors = ["Arduino <info@arduino.cc>"]
 
 [tool.poetry.dependencies]
-python = "3.11.*"
+python = ">=3.11"
 
 [tool.poetry.group.dev.dependencies]
 black = "24.3.0"
