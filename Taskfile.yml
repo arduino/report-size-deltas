@@ -220,8 +220,7 @@ tasks:
       - |
         poetry \
           lock \
-            --no-cache \
-            --no-update
+            --no-cache
 
   poetry:validate:
     desc: Validate pyproject.toml
