@@ -81,9 +81,6 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: pip install poetry
-
       - name: Install Task
         uses: arduino/setup-task@v2
         with:
