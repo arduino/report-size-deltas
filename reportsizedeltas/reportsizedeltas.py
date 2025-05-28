@@ -65,7 +65,7 @@ class ReportSizeDeltas:
     token -- GitHub access token
     """
 
-    report_key_beginning = "**Memory usage change @ "
+    report_key_beginning = "<!-- arduino/report-size-deltas -->\n**Memory usage change @ "
     not_applicable_indicator = "N/A"
 
     class ReportKeys:
