@@ -735,6 +735,7 @@ def test_add_detailed_report_row(report_data, fqbn_data, expected_report_data):
 def test_generate_report():
     sketches_report_path = test_data_path.joinpath("size-deltas-reports-new")
     expected_deltas_report = (
+        "<!-- arduino/report-size-deltas -->\n"
         "**Memory usage change @ d8fd302**\n\n"
         "Board|flash|%|RAM for global variables|%\n"
         "-|-|-|-|-\n"
