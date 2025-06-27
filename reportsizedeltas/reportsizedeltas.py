@@ -31,6 +31,7 @@ def main() -> None:
         repository_name=os.environ["GITHUB_REPOSITORY"],
         sketches_reports_source=os.environ["INPUT_SKETCHES-REPORTS-SOURCE"],
         token=os.environ["INPUT_GITHUB-TOKEN"],
+        update_comment=os.environ["INPUT_UPDATE-COMMENT"] == "true",
     )
 
     report_size_deltas.report_size_deltas()
@@ -47,7 +48,7 @@ def set_verbosity(enable_verbosity: bool) -> None:
     # INFO: manually specified output and all higher log level output
     verbose_logging_level = logging.DEBUG
 
-    if type(enable_verbosity) is not bool:
+    if not isinstance(enable_verbosity, bool):
         raise TypeError
     if enable_verbosity:
         logger.setLevel(level=verbose_logging_level)
@@ -64,7 +65,7 @@ class ReportSizeDeltas:
     token -- GitHub access token
     """
 
-    report_key_beginning = "**Memory usage change @ "
+    report_key_beginning = "<!-- arduino/report-size-deltas -->\n**Memory usage change @ "
     not_applicable_indicator = "N/A"
 
     class ReportKeys:
@@ -86,10 +87,11 @@ class ReportSizeDeltas:
         sketches = "sketches"
         compilation_success = "compilation_success"
 
-    def __init__(self, repository_name: str, sketches_reports_source: str, token: str) -> None:
+    def __init__(self, repository_name: str, sketches_reports_source: str, token: str, update_comment: bool) -> None:
         self.repository_name = repository_name
         self.sketches_reports_source = sketches_reports_source
         self.token = token
+        self.update_comment = update_comment
 
     def report_size_deltas(self) -> None:
         """Comment a report of memory usage change to pull request(s)."""
@@ -167,19 +169,32 @@ class ReportSizeDeltas:
             page_number += 1
             page_count = api_data["page_count"]
 
-    def report_exists(self, pr_number: int, pr_head_sha: str) -> bool:
+    def report_exists(self, pr_number: int, pr_head_sha: str = "") -> str | None:
         """Return whether a report has already been commented to the pull request thread for the latest workflow run.
 
-        Keyword arguments:
-        pr_number -- number of the pull request to check
-        pr_head_sha -- PR's head branch hash
+        If `pr_head_sha` is a blank str, then all thread comments are traversed. Additionally,
+        any report comment found will be deleted if it is not the first report comment found.
+        This is designed to support the action input `update-comment` when asserted.
+
+        If `pr_head_sha` is not a blank str, then thread comments are traversed
+        until a report comment that corresponds to the commit is found.
+        No comments are deleted in this scenario.
+
+        Arguments:
+          pr_number: number of the pull request to check
+          pr_head_sha: PR's head branch hash
+        Returns:
+          - A URL str to use for PATCHing the first applicable report comment.
+          - None if no applicable report comments exist.
         """
-        # Get the pull request's comments
+        comment_url: str | None = None
+        request_uri = f"repos/{self.repository_name}/issues/{pr_number}/comments"
         page_number = 1
         page_count = 1
         while page_number <= page_count:
+            # Get the pull request's comments
             api_data = self.api_request(
-                request="repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments",
+                request=request_uri,
                 page_number=page_number,
             )
 
@@ -187,13 +202,20 @@ class ReportSizeDeltas:
             for comment_data in comments_data:
                 # Check if the comment is a report for the PR's head SHA
                 if comment_data["body"].startswith(self.report_key_beginning + pr_head_sha):
-                    return True
+                    if pr_head_sha:
+                        return comment_data["url"]
+                    # else: pr_head_sha == ""
+                    if comment_url is None:
+                        comment_url = comment_data["url"]
+                    else:  # found another report
+                        # delete report comment if it is not the first report found
+                        self.http_request(url=comment_data["url"], method="DELETE")
 
             page_number += 1
             page_count = api_data["page_count"]
 
         # No reports found for the PR's head SHA
-        return False
+        return comment_url
 
     def get_artifacts_data_for_sha(self, pr_user_login: str, pr_head_ref: str, pr_head_sha: str):
         """Return the list of data objects for the report artifacts associated with the given head commit hash.
@@ -534,7 +556,10 @@ class ReportSizeDeltas:
         report_data = json.dumps(obj={"body": report_markdown}).encode(encoding="utf-8")
         url = "https://api.github.com/repos/" + self.repository_name + "/issues/" + str(pr_number) + "/comments"
 
-        self.http_request(url=url, data=report_data)
+        comment_url = None if not self.update_comment else self.report_exists(pr_number=pr_number)
+        method = "PATCH" if comment_url else None
+
+        self.http_request(url=comment_url or url, data=report_data, method=method)
 
     def api_request(self, request: str, request_parameters: str = "", page_number: int = 1):
         """Do a GitHub API request. Return a dictionary containing:
@@ -594,7 +619,7 @@ class ReportSizeDeltas:
         except Exception as exception:
             raise exception
 
-    def http_request(self, url: str, data: bytes | None = None):
+    def http_request(self, url: str, data: bytes | None = None, method: str | None = None):
         """Make a request and return a dictionary:
         read -- the response
         info -- headers
@@ -604,28 +629,32 @@ class ReportSizeDeltas:
         url -- the URL to load
         data -- data to pass with the request
                 (default value: None)
+        method -- the HTTP request method to use
+                  (default is None which means ``'GET' if data is None else 'POST'``).
         """
-        with self.raw_http_request(url=url, data=data) as response_object:
+        with self.raw_http_request(url=url, data=data, method=method) as response_object:
             return {
                 "body": response_object.read().decode(encoding="utf-8", errors="ignore"),
                 "headers": response_object.info(),
                 "url": response_object.geturl(),
             }
 
-    def raw_http_request(self, url: str, data: bytes | None = None):
+    def raw_http_request(self, url: str, data: bytes | None = None, method: str | None = None):
         """Make a request and return an object containing the response.
 
         Keyword arguments:
         url -- the URL to load
         data -- data to pass with the request
                 (default value: None)
+        method -- the HTTP request method to use
+                  (default is None which means ``'GET' if data is None else 'POST'``).
         """
         # Maximum times to retry opening the URL before giving up
         maximum_urlopen_retries = 3
 
         logger.info("Opening URL: " + url)
 
-        request = urllib.request.Request(url=url, data=data)
+        request = urllib.request.Request(url=url, data=data, method=method)
         request.add_unredirected_header(key="Accept", val="application/vnd.github+json")
         request.add_unredirected_header(key="Authorization", val="Bearer " + self.token)
         request.add_unredirected_header(key="User-Agent", val=self.repository_name.split("/")[0])
