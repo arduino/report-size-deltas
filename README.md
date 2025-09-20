@@ -45,7 +45,7 @@ The action can be used in two ways:
 
 Recommended for public repositories.
 
-The use of a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule) is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://help.github.com/en/actions/configuring-and-managing-workflows/authenticating-with-the-github_token).
+The use of a [scheduled workflow](https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions#onschedule) is necessary in order for the action to have the [write permissions required to comment on pull requests submitted from forks](https://docs.github.com/actions/reference/workflows-and-actions/workflow-syntax#how-permissions-are-calculated-for-a-workflow-job).
 
 In this usage, the `sketches-reports-source` input defines the regular expression matching the names of the workflow artifacts that contain the memory usage data, as specified to the [`actions/upload-artifact`](https://github.com/actions/upload-artifact) action via its `name` input.
 
