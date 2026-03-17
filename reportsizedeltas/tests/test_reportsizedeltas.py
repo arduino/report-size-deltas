@@ -54,7 +54,7 @@ def directories_are_same(left_directory, right_directory) -> bool:
         return False
 
     filecmp.clear_cache()
-    (_, mismatch, errors) = filecmp.cmpfiles(
+    _, mismatch, errors = filecmp.cmpfiles(
         a=left_directory, b=right_directory, common=directory_comparison.common_files, shallow=False
     )
     if len(mismatch) > 0 or len(errors) > 0:
