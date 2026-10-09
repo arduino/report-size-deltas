@@ -987,7 +987,9 @@ def test_get_page_count():
 )
 def test_get_report_column_number(report, column_heading, expected_column_number, expected_report):
     assert (
-        reportsizedeltas.get_report_column_number(report=report, column_heading=column_heading)
+        reportsizedeltas.get_report_column_number(
+            report=report, column_heading=column_heading, extra_column_heading="%"
+        )
         == expected_column_number
     )
     assert report == expected_report
