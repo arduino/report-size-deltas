@@ -1,0 +1,66 @@
+name: Upload test sketches report artifact
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      # The "labeled" event can be used to easily retrigger the workflow to restore the workflow artifact after it
+      # expires every 90 days.
+      - labeled
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+
+    env:
+      ARTIFACT_NAME_PREFIX: sketches-report-
+
+    strategy:
+      fail-fast: false
+      matrix:
+        parameters:
+          # Coverage for pre-actions/upload-artifact@v4 approach where all reports are stored in a single artifact.
+          - artifact-name-suffix: multi
+            artifact-version: 1
+            reports-folder: multi-report-artifact
+          # Coverage for actions/upload-artifact@v4 approach where each report is stored in a separate artifact.
+          - artifact-name-suffix: arduino-samd-mkrzero
+            artifact-version: 2
+            reports-folder: per-report-artifact
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # The action only does a deltas report when the sketches report's `commit_hash` value matches the PR head SHA
+      - name: Update commit hash in reports
+        run: |
+          # Set up dedicated folder for the updated sketches reports (it's not possible to modify them in place)
+          SKETCHES_REPORTS_PATH="${{ runner.temp }}/sketches-reports"
+          # See: https://docs.github.com/en/actions/reference/workflow-commands-for-github-actions#setting-an-environment-variable
+          echo "SKETCHES_REPORTS_PATH=$SKETCHES_REPORTS_PATH" >> "$GITHUB_ENV"
+          mkdir --parents "$SKETCHES_REPORTS_PATH"
+
+          cd "${{ github.workspace }}/.github/workflows/testdata/artifact-source/${{ matrix.parameters.reports-folder }}"
+          for reportFile in *.json; do
+            jq '.commit_hash = "${{ github.event.pull_request.head.sha }}"' "$reportFile" > "${SKETCHES_REPORTS_PATH}/$reportFile"
+          done
+
+      - name: Save sketches report as v1 format workflow artifact
+        if: matrix.parameters.artifact-version == '1'
+        # actions/upload-artifact 3.x is the last version to produce v1 format artifacts:
+        # https://github.com/actions/upload-artifact/blob/main/README.md#v4---whats-new
+        uses: actions/upload-artifact@v3
+        with:
+          if-no-files-found: error
+          path: ${{ env.SKETCHES_REPORTS_PATH }}
+          name: ${{ env.ARTIFACT_NAME_PREFIX }}${{ matrix.parameters.artifact-name-suffix }}
+
+      - name: Save sketches report as v2 format workflow artifact
+        if: matrix.parameters.artifact-version == '2'
+        uses: actions/upload-artifact@v4
+        with:
+          if-no-files-found: error
+          path: ${{ env.SKETCHES_REPORTS_PATH }}
+          name: ${{ env.ARTIFACT_NAME_PREFIX }}${{ matrix.parameters.artifact-name-suffix }}
