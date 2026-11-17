@@ -1,8 +1,8 @@
-import distutils.dir_util
 import filecmp
 import json
 import os
 import pathlib
+import shutil
 import tempfile
 import unittest.mock
 import urllib
@@ -526,8 +526,10 @@ def test_get_sketches_reports(test_data_folder_name):
 
     artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(
-            src=str(current_test_data_path.joinpath("artifacts")), dst=artifacts_folder_object.name
+        shutil.copytree(
+            src=str(current_test_data_path.joinpath("artifacts")),
+            dst=artifacts_folder_object.name,
+            dirs_exist_ok=True,
         )
     except Exception:  # pragma: no cover
         artifacts_folder_object.cleanup()
@@ -730,7 +732,11 @@ def test_generate_report():
 
     artifacts_folder_object = tempfile.TemporaryDirectory(prefix="test_reportsizedeltas-")
     try:
-        distutils.dir_util.copy_tree(src=str(sketches_report_path), dst=artifacts_folder_object.name)
+        shutil.copytree(
+            src=str(sketches_report_path),
+            dst=artifacts_folder_object.name,
+            dirs_exist_ok=True,
+        )
     except Exception:  # pragma: no cover
         artifacts_folder_object.cleanup()
         raise
